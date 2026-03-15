@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html>
 <head>
+
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>22IS444 Attendance</title>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<title>22IS444 Attendance</title>
 
 <style>
 
@@ -13,8 +13,8 @@ body{
 font-family:Arial;
 background:#0a0a0f;
 color:#e8e8f0;
-text-align:center;
 margin:0;
+text-align:center;
 }
 
 header{
@@ -38,7 +38,7 @@ border:1px solid #2a2a3d;
 }
 
 input,select{
-padding:10px;
+padding:12px;
 margin:10px;
 font-size:16px;
 border-radius:6px;
@@ -83,6 +83,7 @@ margin-top:10px;
 .hidden{display:none}
 
 </style>
+
 </head>
 
 <body>
@@ -94,19 +95,41 @@ ISE Dept · Python Programming — 22IS444 · 2025-26
 
 <div class="container">
 
+<!-- LOGIN -->
+
 <div id="login">
 
-<div class="card">
-<h3>Student</h3>
-<button class="blue" onclick="showStudent()">Mark Attendance</button>
-</div>
-
 <div class="card hidden" id="profcard">
-<h3>Professor</h3>
-<button class="green" onclick="showProfessor()">Open Dashboard</button>
+
+<h2>Professor</h2>
+
+<button class="green"
+style="font-size:20px;padding:18px 30px"
+onclick="showProfessor()">
+
+Open Professor Dashboard
+
+</button>
+
+</div>
+
+<div class="card">
+
+<h4>Student</h4>
+
+<button class="blue"
+style="font-size:14px;padding:10px 18px"
+onclick="showStudent()">
+
+Mark Attendance
+
+</button>
+
 </div>
 
 </div>
+
+<!-- STUDENT -->
 
 <div id="student" class="hidden">
 
@@ -114,10 +137,25 @@ ISE Dept · Python Programming — 22IS444 · 2025-26
 
 <h3>Student Attendance</h3>
 
-<input id="usn" placeholder="Enter USN"><br>
-<input id="token" placeholder="4 digit token"><br>
+<input id="usn"
+placeholder="Enter USN"
+style="text-transform:uppercase"
+oninput="previewName()">
 
-<button id="submitBtn" class="green" onclick="submitAttendance()">Submit</button>
+<div id="namePreview"
+style="color:#00e5ff;margin-bottom:10px"></div>
+
+<input id="token" placeholder="4 digit token">
+
+<br>
+
+<button id="submitBtn"
+class="green"
+onclick="submitAttendance()">
+
+Submit
+
+</button>
 
 <div id="result"></div>
 
@@ -126,6 +164,8 @@ ISE Dept · Python Programming — 22IS444 · 2025-26
 </div>
 
 </div>
+
+<!-- PROFESSOR -->
 
 <div id="prof" class="hidden">
 
@@ -147,7 +187,7 @@ Period
 <button class="green" onclick="openSession()">Open Attendance</button>
 <button class="red" onclick="closeSession()">Close Attendance</button>
 
-<h3 id="sessionStatus">Closed</h3>
+<h3 id="status">Closed</h3>
 
 <div id="tokenDisplay"></div>
 
@@ -171,12 +211,6 @@ Period
 
 </div>
 
-<div class="card">
-
-<button onclick="exportExcel()">Export Excel</button>
-
-</div>
-
 <button onclick="goHome()">Exit</button>
 
 </div>
@@ -190,12 +224,11 @@ const API_KEY="$2a$10$rhR8M3EZH2BrZf4icYP8n./3XIT9lDt1Ba4fG8zYjyvZOEb8racrq";
 
 const BASE="https://api.jsonbin.io/v3/b/"+BIN_ID;
 
-let timer=null;
-let poll=null;
+let timerInterval;
+let pollInterval;
 
-const STUDENTS = [
-{usn:'2GI23IS103',name:'Sridhar B Awajjigol'},
-{usn:'2GI23IS111',name:'Tanishq Mj'},
+const STUDENTS=[
+
 {usn:'2GI24IS002',name:'Aditya Malli'},
 {usn:'2GI24IS003',name:'Aditya M Medar'},
 {usn:'2GI24IS004',name:'Aditya Morab'},
@@ -217,7 +250,7 @@ const STUDENTS = [
 {usn:'2GI24IS029',name:'Kshiti R S'},
 {usn:'2GI24IS030',name:'Laxman Awate'},
 {usn:'2GI24IS035',name:'Manasvi Jadhav'},
-{usn:'2GI24IS036',name:'Manjunath Hanamant Sarur'},
+{usn:'2GI24IS036',name:'Manjunath Sarur'},
 {usn:'2GI24IS039',name:'Namita Dhadi'},
 {usn:'2GI24IS040',name:'Naveen Kumar K'},
 {usn:'2GI24IS043',name:'Nisarga Bairawadagi'},
@@ -226,32 +259,8 @@ const STUDENTS = [
 {usn:'2GI24IS048',name:'Prajwal Manoj'},
 {usn:'2GI24IS049',name:'Pranav Panale'},
 {usn:'2GI24IS055',name:'Purva Naik'},
-{usn:'2GI24IS056',name:'Pushpadant Mugganavar'},
-{usn:'2GI24IS058',name:'Rajeshwari Mallappa Ashi'},
-{usn:'2GI24IS060',name:'Ravi Soraganvi'},
-{usn:'2GI24IS061',name:'Ravinandan Shivapuer'},
-{usn:'2GI24IS062',name:'Ritvik Rajesh Bilgeekar'},
-{usn:'2GI24IS063',name:'Rohitkumar Siddu Kuri'},
-{usn:'2GI24IS068',name:'Samarth Patil'},
-{usn:'2GI24IS069',name:'Sammed Patil'},
-{usn:'2GI24IS071',name:'Sanjana M Badiger'},
-{usn:'2GI24IS073',name:'Sarthak Patil'},
-{usn:'2GI24IS076',name:'Shivangi Singh'},
-{usn:'2GI24IS082',name:'Shreya Nidavani'},
-{usn:'2GI24IS084',name:'Shrihari Chikkodikar'},
-{usn:'2GI24IS085',name:'Shrilakshmi U Gangadharmath'},
-{usn:'2GI24IS086',name:'Shriom Rai'},
-{usn:'2GI24IS088',name:'Siddharam Patted'},
-{usn:'2GI24IS090',name:'Sneha A Patil'},
-{usn:'2GI24IS097',name:'Subramanya S Kamble'},
-{usn:'2GI24IS098',name:'Suchitra Yallappa Busaraddi'},
-{usn:'2GI24IS099',name:'Sunakshi Thakur'},
-{usn:'2GI24IS102',name:'Swayam Vernekar'},
-{usn:'2GI24IS111',name:'Vedanidhi Namannavar'},
-{usn:'2GI24IS116',name:'Vikasgoud S Sangannavar'},
-{usn:'2GI24IS117',name:'Vinay Turaidar'},
-{usn:'2GI24IS119',name:'Vinod Kodolli'},
-{usn:'2GI24IS122',name:'Rahul R Deshpande'}
+{usn:'2GI24IS056',name:'Pushpadant Mugganavar'}
+
 ];
 
 function findStudent(usn){
@@ -274,6 +283,12 @@ body:JSON.stringify(data)
 });
 }
 
+function hideAll(){
+login.style.display="none";
+student.style.display="none";
+prof.style.display="none";
+}
+
 function showStudent(){
 hideAll();
 student.style.display="block";
@@ -289,10 +304,14 @@ hideAll();
 login.style.display="block";
 }
 
-function hideAll(){
-login.style.display="none";
-student.style.display="none";
-prof.style.display="none";
+function previewName(){
+
+let usn=document.getElementById("usn").value.trim().toUpperCase();
+
+let stu=findStudent(usn);
+
+namePreview.innerText=stu?stu.name:"";
+
 }
 
 function randomToken(){
@@ -316,12 +335,37 @@ await apiPut(data);
 
 tokenDisplay.innerHTML="<h2>Token: "+token+"</h2>";
 
-sessionStatus.innerText="OPEN";
+status.innerText="OPEN";
 
 startTimer();
 
 startPolling();
 
+}
+
+function startTimer(){
+
+let remaining=300;
+
+timerInterval=setInterval(()=>{
+
+remaining--;
+
+let m=Math.floor(remaining/60);
+let s=remaining%60;
+
+if(s<10)s="0"+s;
+
+timer.innerText="Time Remaining "+m+":"+s;
+
+if(remaining<=0)closeSession();
+
+},1000);
+
+}
+
+function startPolling(){
+pollInterval=setInterval(loadTable,5000);
 }
 
 async function closeSession(){
@@ -332,35 +376,10 @@ data.activeSession=null;
 
 await apiPut(data);
 
-clearInterval(timer);
-clearInterval(poll);
+clearInterval(timerInterval);
+clearInterval(pollInterval);
 
-sessionStatus.innerText="Closed";
-
-}
-
-function startTimer(){
-
-let start=Date.now();
-
-timer=setInterval(()=>{
-
-let e=Math.floor((Date.now()-start)/1000);
-
-let m=Math.floor(e/60);
-let s=e%60;
-
-timer.innerText="Elapsed "+m+":"+s;
-
-if(e>=300)closeSession();
-
-},1000);
-
-}
-
-function startPolling(){
-
-poll=setInterval(loadTable,5000);
+status.innerText="Closed";
 
 }
 
@@ -370,19 +389,17 @@ let data=await apiGet();
 
 if(!data.activeSession)return;
 
-let t=document.getElementById("table");
-
-t.innerHTML="<tr><th>USN</th><th>Name</th><th>Time</th></tr>";
+table.innerHTML="<tr><th>USN</th><th>Name</th><th>Time</th></tr>";
 
 for(let u of data.activeSession.present){
-
-let time=data.activeSession.times[u];
 
 let stu=findStudent(u);
 
 let name=stu?stu.name:"";
 
-t.innerHTML+="<tr><td>"+u+"</td><td>"+name+"</td><td>"+time+"</td></tr>";
+let time=data.activeSession.times[u];
+
+table.innerHTML+="<tr><td>"+u+"</td><td>"+name+"</td><td>"+time+"</td></tr>";
 
 }
 
@@ -394,13 +411,11 @@ let usn=document.getElementById("usn").value.trim().toUpperCase();
 
 let token=document.getElementById("token").value;
 
-let res=document.getElementById("result");
-
 let data=await apiGet();
 
 if(!data.activeSession){
 
-res.innerHTML="<div class='error'>Attendance Closed</div>";
+result.innerHTML="<div class='error'>Attendance Closed</div>";
 
 return;
 
@@ -408,7 +423,7 @@ return;
 
 if(token!=data.activeSession.token){
 
-res.innerHTML="<div class='error'>Incorrect Token</div>";
+result.innerHTML="<div class='error'>Incorrect Token</div>";
 
 return;
 
@@ -418,7 +433,7 @@ let stu=findStudent(usn);
 
 if(!stu){
 
-res.innerHTML="<div class='error'>USN Not Found</div>";
+result.innerHTML="<div class='error'>USN Not Found</div>";
 
 return;
 
@@ -426,7 +441,7 @@ return;
 
 if(data.activeSession.present.includes(usn)){
 
-res.innerHTML="<div class='error'>Already Marked</div>";
+result.innerHTML="<div class='error'>Already Marked</div>";
 
 return;
 
@@ -442,30 +457,10 @@ data.activeSession.times[usn]=time;
 
 await apiPut(data);
 
-res.innerHTML="<div class='success'>Attendance Marked<br>"+stu.name+"<br>"+usn+"</div>";
+result.innerHTML="<div class='success'>Attendance Marked<br>"+stu.name+"<br>"+usn+"</div>";
 
 submitBtn.disabled=true;
 submitBtn.innerText="Submitted";
-
-}
-
-function exportExcel(){
-
-let rows=[["Sl","USN","Name"]];
-
-STUDENTS.forEach((s,i)=>{
-
-rows.push([i+1,s.usn,s.name]);
-
-});
-
-let ws=XLSX.utils.aoa_to_sheet(rows);
-
-let wb=XLSX.utils.book_new();
-
-XLSX.utils.book_append_sheet(wb,ws,"Attendance");
-
-XLSX.writeFile(wb,"Attendance.xlsx");
 
 }
 
