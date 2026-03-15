@@ -7,6 +7,8 @@
 
 <title>22IS444 Attendance</title>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
 <style>
 
 body{
@@ -38,7 +40,7 @@ border:1px solid #2a2a3d;
 }
 
 input,select{
-padding:12px;
+padding:10px;
 margin:10px;
 font-size:16px;
 border-radius:6px;
@@ -69,16 +71,8 @@ border:1px solid #333;
 padding:6px;
 }
 
-.success{
-color:#00ff9d;
-font-size:20px;
-margin-top:10px;
-}
-
-.error{
-color:#ff4466;
-margin-top:10px;
-}
+.success{color:#00ff9d;font-size:20px}
+.error{color:#ff4466}
 
 .hidden{display:none}
 
@@ -103,8 +97,7 @@ ISE Dept · Python Programming — 22IS444 · 2025-26
 
 <h2>Professor</h2>
 
-<button class="green"
-style="font-size:20px;padding:18px 30px"
+<button class="green" style="font-size:20px;padding:18px 30px"
 onclick="showProfessor()">
 
 Open Professor Dashboard
@@ -117,9 +110,7 @@ Open Professor Dashboard
 
 <h4>Student</h4>
 
-<button class="blue"
-style="font-size:14px;padding:10px 18px"
-onclick="showStudent()">
+<button class="blue" onclick="showStudent()">
 
 Mark Attendance
 
@@ -184,6 +175,11 @@ Period
 
 <br>
 
+Defaulter Threshold %
+<input id="threshold" value="75">
+
+<br>
+
 <button class="green" onclick="openSession()">Open Attendance</button>
 <button class="red" onclick="closeSession()">Close Attendance</button>
 
@@ -211,6 +207,12 @@ Period
 
 </div>
 
+<div class="card">
+
+<button onclick="exportExcel()">Export Excel</button>
+
+</div>
+
 <button onclick="goHome()">Exit</button>
 
 </div>
@@ -227,8 +229,9 @@ const BASE="https://api.jsonbin.io/v3/b/"+BIN_ID;
 let timerInterval;
 let pollInterval;
 
-const STUDENTS=[
-
+const STUDENTS = [
+{usn:'2GI23IS103',name:'Sridhar B Awajjigol'},
+{usn:'2GI23IS111',name:'Tanishq Mj'},
 {usn:'2GI24IS002',name:'Aditya Malli'},
 {usn:'2GI24IS003',name:'Aditya M Medar'},
 {usn:'2GI24IS004',name:'Aditya Morab'},
@@ -250,7 +253,7 @@ const STUDENTS=[
 {usn:'2GI24IS029',name:'Kshiti R S'},
 {usn:'2GI24IS030',name:'Laxman Awate'},
 {usn:'2GI24IS035',name:'Manasvi Jadhav'},
-{usn:'2GI24IS036',name:'Manjunath Sarur'},
+{usn:'2GI24IS036',name:'Manjunath Hanamant Sarur'},
 {usn:'2GI24IS039',name:'Namita Dhadi'},
 {usn:'2GI24IS040',name:'Naveen Kumar K'},
 {usn:'2GI24IS043',name:'Nisarga Bairawadagi'},
@@ -259,8 +262,32 @@ const STUDENTS=[
 {usn:'2GI24IS048',name:'Prajwal Manoj'},
 {usn:'2GI24IS049',name:'Pranav Panale'},
 {usn:'2GI24IS055',name:'Purva Naik'},
-{usn:'2GI24IS056',name:'Pushpadant Mugganavar'}
-
+{usn:'2GI24IS056',name:'Pushpadant Mugganavar'},
+{usn:'2GI24IS058',name:'Rajeshwari Mallappa Ashi'},
+{usn:'2GI24IS060',name:'Ravi Soraganvi'},
+{usn:'2GI24IS061',name:'Ravinandan Shivapuer'},
+{usn:'2GI24IS062',name:'Ritvik Rajesh Bilgeekar'},
+{usn:'2GI24IS063',name:'Rohitkumar Siddu Kuri'},
+{usn:'2GI24IS068',name:'Samarth Patil'},
+{usn:'2GI24IS069',name:'Sammed Patil'},
+{usn:'2GI24IS071',name:'Sanjana M Badiger'},
+{usn:'2GI24IS073',name:'Sarthak Patil'},
+{usn:'2GI24IS076',name:'Shivangi Singh'},
+{usn:'2GI24IS082',name:'Shreya Nidavani'},
+{usn:'2GI24IS084',name:'Shrihari Chikkodikar'},
+{usn:'2GI24IS085',name:'Shrilakshmi U Gangadharmath'},
+{usn:'2GI24IS086',name:'Shriom Rai'},
+{usn:'2GI24IS088',name:'Siddharam Patted'},
+{usn:'2GI24IS090',name:'Sneha A Patil'},
+{usn:'2GI24IS097',name:'Subramanya S Kamble'},
+{usn:'2GI24IS098',name:'Suchitra Yallappa Busaraddi'},
+{usn:'2GI24IS099',name:'Sunakshi Thakur'},
+{usn:'2GI24IS102',name:'Swayam Vernekar'},
+{usn:'2GI24IS111',name:'Vedanidhi Namannavar'},
+{usn:'2GI24IS116',name:'Vikasgoud S Sangannavar'},
+{usn:'2GI24IS117',name:'Vinay Turaidar'},
+{usn:'2GI24IS119',name:'Vinod Kodolli'},
+{usn:'2GI24IS122',name:'Rahul R Deshpande'}
 ];
 
 function findStudent(usn){
@@ -322,13 +349,16 @@ async function openSession(){
 
 let token=randomToken();
 
-let data={
-activeSession:{
+let data=await apiGet()||{sessions:[],threshold:75};
+
+data.threshold=parseInt(document.getElementById("threshold").value);
+
+data.activeSession={
 token:token,
+date:new Date().toISOString().slice(0,10),
+period:period.value,
 present:[],
-times:{},
-openedAt:new Date().toISOString()
-}
+times:{}
 };
 
 await apiPut(data);
@@ -338,7 +368,6 @@ tokenDisplay.innerHTML="<h2>Token: "+token+"</h2>";
 status.innerText="OPEN";
 
 startTimer();
-
 startPolling();
 
 }
@@ -372,9 +401,17 @@ async function closeSession(){
 
 let data=await apiGet();
 
+if(data.activeSession){
+
+data.sessions=data.sessions||[];
+
+data.sessions.push(data.activeSession);
+
 data.activeSession=null;
 
 await apiPut(data);
+
+}
 
 clearInterval(timerInterval);
 clearInterval(pollInterval);
@@ -407,7 +444,7 @@ table.innerHTML+="<tr><td>"+u+"</td><td>"+name+"</td><td>"+time+"</td></tr>";
 
 async function submitAttendance(){
 
-let usn=document.getElementById("usn").value.trim().toUpperCase();
+let usn=usn.value.trim().toUpperCase();
 
 let token=document.getElementById("token").value;
 
@@ -416,7 +453,6 @@ let data=await apiGet();
 if(!data.activeSession){
 
 result.innerHTML="<div class='error'>Attendance Closed</div>";
-
 return;
 
 }
@@ -424,7 +460,6 @@ return;
 if(token!=data.activeSession.token){
 
 result.innerHTML="<div class='error'>Incorrect Token</div>";
-
 return;
 
 }
@@ -434,7 +469,6 @@ let stu=findStudent(usn);
 if(!stu){
 
 result.innerHTML="<div class='error'>USN Not Found</div>";
-
 return;
 
 }
@@ -442,25 +476,54 @@ return;
 if(data.activeSession.present.includes(usn)){
 
 result.innerHTML="<div class='error'>Already Marked</div>";
-
 return;
 
 }
 
 let now=new Date();
-
 let time=now.getHours()+":"+now.getMinutes();
 
 data.activeSession.present.push(usn);
-
 data.activeSession.times[usn]=time;
 
 await apiPut(data);
 
-result.innerHTML="<div class='success'>Attendance Marked<br>"+stu.name+"<br>"+usn+"</div>";
+result.innerHTML="<div class='success'>Attendance Marked<br>"+stu.name+"</div>";
 
 submitBtn.disabled=true;
-submitBtn.innerText="Submitted";
+
+}
+
+function exportExcel(){
+
+apiGet().then(data=>{
+
+let sessions=data.sessions||[];
+
+let rows=[["Sl","USN","Name","Total","%"]];
+
+STUDENTS.forEach((s,i)=>{
+
+let present=0;
+
+sessions.forEach(sess=>{
+if(sess.present.includes(s.usn))present++;
+});
+
+let percent=sessions.length?Math.round(present*100/sessions.length):0;
+
+rows.push([i+1,s.usn,s.name,present,percent]);
+
+});
+
+let ws=XLSX.utils.aoa_to_sheet(rows);
+let wb=XLSX.utils.book_new();
+
+XLSX.utils.book_append_sheet(wb,ws,"Register");
+
+XLSX.writeFile(wb,"Attendance.xlsx");
+
+});
 
 }
 
