@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html>
 <head>
-
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 
@@ -89,15 +88,14 @@ ISE Dept · Python Programming — 22IS444 · 2025-26
 
 <div class="container">
 
-<!-- LOGIN -->
-
 <div id="login">
 
 <div class="card hidden" id="profcard">
 
 <h2>Professor</h2>
 
-<button class="green" style="font-size:20px;padding:18px 30px"
+<button class="green"
+style="font-size:20px;padding:18px 30px"
 onclick="showProfessor()">
 
 Open Professor Dashboard
@@ -119,8 +117,6 @@ Mark Attendance
 </div>
 
 </div>
-
-<!-- STUDENT -->
 
 <div id="student" class="hidden">
 
@@ -155,8 +151,6 @@ Submit
 </div>
 
 </div>
-
-<!-- PROFESSOR -->
 
 <div id="prof" class="hidden">
 
@@ -229,7 +223,10 @@ const BASE="https://api.jsonbin.io/v3/b/"+BIN_ID;
 let timerInterval;
 let pollInterval;
 
-const STUDENTS = [
+const STUDENTS=[
+
+/* paste your full 74 student list here */
+
 {usn:'2GI23IS103',name:'Sridhar B Awajjigol'},
 {usn:'2GI23IS111',name:'Tanishq Mj'},
 {usn:'2GI24IS002',name:'Aditya Malli'},
@@ -288,19 +285,30 @@ const STUDENTS = [
 {usn:'2GI24IS117',name:'Vinay Turaidar'},
 {usn:'2GI24IS119',name:'Vinod Kodolli'},
 {usn:'2GI24IS122',name:'Rahul R Deshpande'}
+
+
+  
 ];
 
 function findStudent(usn){
 return STUDENTS.find(s=>s.usn===usn);
 }
 
-function apiGet(){
-return fetch(BASE+"/latest",{headers:{'X-Master-Key':API_KEY}})
-.then(r=>r.json()).then(d=>d.record);
+async function apiGet(){
+
+let r=await fetch(BASE+"/latest",{
+headers:{'X-Master-Key':API_KEY}
+});
+
+let j=await r.json();
+
+return j.record;
+
 }
 
-function apiPut(data){
-return fetch(BASE,{
+async function apiPut(data){
+
+await fetch(BASE,{
 method:'PUT',
 headers:{
 'Content-Type':'application/json',
@@ -308,6 +316,7 @@ headers:{
 },
 body:JSON.stringify(data)
 });
+
 }
 
 function hideAll(){
@@ -349,7 +358,11 @@ async function openSession(){
 
 let token=randomToken();
 
-let data=await apiGet()||{sessions:[],threshold:75};
+let data=await apiGet();
+
+if(!data){
+data={sessions:[],threshold:75,activeSession:null};
+}
 
 data.threshold=parseInt(document.getElementById("threshold").value);
 
@@ -366,6 +379,8 @@ await apiPut(data);
 tokenDisplay.innerHTML="<h2>Token: "+token+"</h2>";
 
 status.innerText="OPEN";
+
+loadTable();
 
 startTimer();
 startPolling();
@@ -444,46 +459,40 @@ table.innerHTML+="<tr><td>"+u+"</td><td>"+name+"</td><td>"+time+"</td></tr>";
 
 async function submitAttendance(){
 
-let usn=usn.value.trim().toUpperCase();
+let usn=document.getElementById("usn").value.trim().toUpperCase();
 
 let token=document.getElementById("token").value;
 
 let data=await apiGet();
 
 if(!data.activeSession){
-
 result.innerHTML="<div class='error'>Attendance Closed</div>";
 return;
-
 }
 
 if(token!=data.activeSession.token){
-
 result.innerHTML="<div class='error'>Incorrect Token</div>";
 return;
-
 }
 
 let stu=findStudent(usn);
 
 if(!stu){
-
 result.innerHTML="<div class='error'>USN Not Found</div>";
 return;
-
 }
 
 if(data.activeSession.present.includes(usn)){
-
 result.innerHTML="<div class='error'>Already Marked</div>";
 return;
-
 }
 
 let now=new Date();
+
 let time=now.getHours()+":"+now.getMinutes();
 
 data.activeSession.present.push(usn);
+
 data.activeSession.times[usn]=time;
 
 await apiPut(data);
