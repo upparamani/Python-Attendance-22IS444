@@ -1,34 +1,32 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>22IS444 Attendance</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
 <style>
 
 body{
-font-family: Arial, sans-serif;
+font-family:Arial;
 background:#0a0a0f;
 color:#e8e8f0;
-margin:0;
-padding:0;
 text-align:center;
+margin:0;
 }
 
 header{
-padding:20px;
 background:#12121a;
+padding:15px;
 border-bottom:1px solid #2a2a3d;
 }
 
-h1{margin:5px}
-h2{margin:5px;font-weight:normal;color:#aaa}
-
 .container{
-padding:20px;
-max-width:800px;
+max-width:900px;
 margin:auto;
+padding:20px;
 }
 
 .card{
@@ -40,10 +38,9 @@ border:1px solid #2a2a3d;
 }
 
 input,select{
-padding:12px;
+padding:10px;
 margin:10px;
 font-size:16px;
-width:220px;
 border-radius:6px;
 border:none;
 }
@@ -64,28 +61,26 @@ margin:10px;
 table{
 width:100%;
 border-collapse:collapse;
-margin-top:20px;
+margin-top:15px;
 }
 
-td,th{
+th,td{
 border:1px solid #333;
-padding:8px;
+padding:6px;
 }
 
 .success{
 color:#00ff9d;
 font-size:20px;
-margin-top:20px;
+margin-top:10px;
 }
 
 .error{
 color:#ff4466;
-margin-top:20px;
+margin-top:10px;
 }
 
-.hidden{
-display:none;
-}
+.hidden{display:none}
 
 </style>
 </head>
@@ -93,41 +88,38 @@ display:none;
 <body>
 
 <header>
-<h1>KLS Gogte Institute of Technology</h1>
-<h2>ISE Dept · Python Programming — 22IS444 · 2025-26</h2>
+<h2>KLS Gogte Institute of Technology</h2>
+ISE Dept · Python Programming — 22IS444 · 2025-26
 </header>
 
 <div class="container">
 
-<!-- LOGIN -->
-
 <div id="login">
 
 <div class="card">
-<h2>Student</h2>
+<h3>Student</h3>
 <button class="blue" onclick="showStudent()">Mark Attendance</button>
 </div>
 
 <div class="card hidden" id="profcard">
-<h2>Professor</h2>
+<h3>Professor</h3>
 <button class="green" onclick="showProfessor()">Open Dashboard</button>
 </div>
 
 </div>
 
-<!-- STUDENT SCREEN -->
-
 <div id="student" class="hidden">
 
 <div class="card">
-<h2>Mark Attendance</h2>
+
+<h3>Student Attendance</h3>
 
 <input id="usn" placeholder="Enter USN"><br>
 <input id="token" placeholder="4 digit token"><br>
 
-<button class="green" onclick="submitAttendance()">Submit</button>
+<button id="submitBtn" class="green" onclick="submitAttendance()">Submit</button>
 
-<div id="studentResult"></div>
+<div id="result"></div>
 
 <button onclick="goHome()">Back</button>
 
@@ -135,13 +127,11 @@ display:none;
 
 </div>
 
-<!-- PROFESSOR DASHBOARD -->
-
 <div id="prof" class="hidden">
 
 <div class="card">
 
-<h2>Professor Dashboard</h2>
+<h3>Professor Dashboard</h3>
 
 Date
 <input type="date" id="date">
@@ -157,11 +147,11 @@ Period
 <button class="green" onclick="openSession()">Open Attendance</button>
 <button class="red" onclick="closeSession()">Close Attendance</button>
 
-<h3 id="sessionInfo">Session Closed</h3>
+<h3 id="sessionStatus">Closed</h3>
 
 <div id="tokenDisplay"></div>
 
-<h3 id="timer"></h3>
+<div id="timer"></div>
 
 </div>
 
@@ -170,11 +160,20 @@ Period
 <h3>Live Attendance</h3>
 
 <table id="table">
+
 <tr>
 <th>USN</th>
+<th>Name</th>
 <th>Time</th>
 </tr>
+
 </table>
+
+</div>
+
+<div class="card">
+
+<button onclick="exportExcel()">Export Excel</button>
 
 </div>
 
@@ -191,10 +190,21 @@ const API_KEY="$2a$10$rhR8M3EZH2BrZf4icYP8n./3XIT9lDt1Ba4fG8zYjyvZOEb8racrq";
 
 const BASE="https://api.jsonbin.io/v3/b/"+BIN_ID;
 
-let sessionTimer=null;
-let pollTimer=null;
-let sessionToken=null;
-let openedAt=null;
+let timer=null;
+let poll=null;
+
+const STUDENTS=[
+{usn:'2GI24IS040',name:'Naveen Kumar K'},
+{usn:'2GI24IS043',name:'Nisarga Bairawadagi'},
+{usn:'2GI24IS044',name:'Omkar Bhovi'},
+{usn:'2GI24IS047',name:'Prajwal H'},
+{usn:'2GI24IS048',name:'Prajwal Manoj'},
+{usn:'2GI24IS049',name:'Pranav Panale'}
+];
+
+function findStudent(usn){
+return STUDENTS.find(s=>s.usn===usn);
+}
 
 function apiGet(){
 return fetch(BASE+"/latest",{headers:{'X-Master-Key':API_KEY}})
@@ -214,57 +224,50 @@ body:JSON.stringify(data)
 
 function showStudent(){
 hideAll();
-document.getElementById("student").style.display="block";
+student.style.display="block";
 }
 
 function showProfessor(){
 hideAll();
-document.getElementById("prof").style.display="block";
+prof.style.display="block";
 }
 
 function goHome(){
 hideAll();
-document.getElementById("login").style.display="block";
+login.style.display="block";
 }
 
 function hideAll(){
-document.getElementById("login").style.display="none";
-document.getElementById("student").style.display="none";
-document.getElementById("prof").style.display="none";
+login.style.display="none";
+student.style.display="none";
+prof.style.display="none";
 }
 
 function randomToken(){
-return Math.floor(1000+Math.random()*9000).toString();
+return Math.floor(1000+Math.random()*9000);
 }
 
 async function openSession(){
 
-let date=document.getElementById("date").value;
-let period=document.getElementById("period").value;
-
-sessionToken=randomToken();
-
-openedAt=new Date().toISOString();
+let token=randomToken();
 
 let data={
 activeSession:{
-token:sessionToken,
-date:date,
-period:period,
+token:token,
 present:[],
 times:{},
-openedAt:openedAt
+openedAt:new Date().toISOString()
 }
 };
 
 await apiPut(data);
 
-document.getElementById("tokenDisplay").innerHTML=
-"<h2>Token: "+sessionToken+"</h2>";
+tokenDisplay.innerHTML="<h2>Token: "+token+"</h2>";
 
-document.getElementById("sessionInfo").innerText="Attendance OPEN";
+sessionStatus.innerText="OPEN";
 
 startTimer();
+
 startPolling();
 
 }
@@ -277,10 +280,10 @@ data.activeSession=null;
 
 await apiPut(data);
 
-clearInterval(sessionTimer);
-clearInterval(pollTimer);
+clearInterval(timer);
+clearInterval(poll);
 
-document.getElementById("sessionInfo").innerText="Session Closed";
+sessionStatus.innerText="Closed";
 
 }
 
@@ -288,19 +291,16 @@ function startTimer(){
 
 let start=Date.now();
 
-sessionTimer=setInterval(()=>{
+timer=setInterval(()=>{
 
-let elapsed=Math.floor((Date.now()-start)/1000);
+let e=Math.floor((Date.now()-start)/1000);
 
-let min=Math.floor(elapsed/60);
-let sec=elapsed%60;
+let m=Math.floor(e/60);
+let s=e%60;
 
-document.getElementById("timer").innerText=
-"Elapsed: "+min+":"+sec;
+timer.innerText="Elapsed "+m+":"+s;
 
-if(elapsed>=300){
-closeSession();
-}
+if(e>=300)closeSession();
 
 },1000);
 
@@ -308,7 +308,7 @@ closeSession();
 
 function startPolling(){
 
-pollTimer=setInterval(loadTable,5000);
+poll=setInterval(loadTable,5000);
 
 }
 
@@ -318,17 +318,19 @@ let data=await apiGet();
 
 if(!data.activeSession)return;
 
-let table=document.getElementById("table");
+let t=document.getElementById("table");
 
-table.innerHTML="<tr><th>USN</th><th>Time</th></tr>";
+t.innerHTML="<tr><th>USN</th><th>Name</th><th>Time</th></tr>";
 
 for(let u of data.activeSession.present){
 
-let t=data.activeSession.times[u];
+let time=data.activeSession.times[u];
 
-let row="<tr><td>"+u+"</td><td>"+t+"</td></tr>";
+let stu=findStudent(u);
 
-table.innerHTML+=row;
+let name=stu?stu.name:"";
+
+t.innerHTML+="<tr><td>"+u+"</td><td>"+name+"</td><td>"+time+"</td></tr>";
 
 }
 
@@ -337,25 +339,45 @@ table.innerHTML+=row;
 async function submitAttendance(){
 
 let usn=document.getElementById("usn").value.trim().toUpperCase();
-let token=document.getElementById("token").value.trim();
 
-let res=document.getElementById("studentResult");
+let token=document.getElementById("token").value;
+
+let res=document.getElementById("result");
 
 let data=await apiGet();
 
 if(!data.activeSession){
+
 res.innerHTML="<div class='error'>Attendance Closed</div>";
+
 return;
+
 }
 
 if(token!=data.activeSession.token){
+
 res.innerHTML="<div class='error'>Incorrect Token</div>";
+
 return;
+
+}
+
+let stu=findStudent(usn);
+
+if(!stu){
+
+res.innerHTML="<div class='error'>USN Not Found</div>";
+
+return;
+
 }
 
 if(data.activeSession.present.includes(usn)){
+
 res.innerHTML="<div class='error'>Already Marked</div>";
+
 return;
+
 }
 
 let now=new Date();
@@ -368,17 +390,38 @@ data.activeSession.times[usn]=time;
 
 await apiPut(data);
 
-res.innerHTML="<div class='success'>Attendance Marked</div>";
+res.innerHTML="<div class='success'>Attendance Marked<br>"+stu.name+"<br>"+usn+"</div>";
+
+submitBtn.disabled=true;
+submitBtn.innerText="Submitted";
+
+}
+
+function exportExcel(){
+
+let rows=[["Sl","USN","Name"]];
+
+STUDENTS.forEach((s,i)=>{
+
+rows.push([i+1,s.usn,s.name]);
+
+});
+
+let ws=XLSX.utils.aoa_to_sheet(rows);
+
+let wb=XLSX.utils.book_new();
+
+XLSX.utils.book_append_sheet(wb,ws,"Attendance");
+
+XLSX.writeFile(wb,"Attendance.xlsx");
 
 }
 
 document.addEventListener("DOMContentLoaded",()=>{
 
-let params=new URLSearchParams(location.search);
+let p=new URLSearchParams(location.search);
 
-if(params.get("prof")=="1"){
-document.getElementById("profcard").style.display="block";
-}
+if(p.get("prof")=="1")profcard.style.display="block";
 
 });
 
