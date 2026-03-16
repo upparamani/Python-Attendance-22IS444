@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 
-<title>22IS444 Attendance</title>
+<title>Python Programming Attendance</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
@@ -83,7 +83,7 @@ padding:6px;
 
 <header>
 <h2>KLS Gogte Institute of Technology</h2>
-ISE Dept · Python Programming — 22IS444 · 2025-26
+ISE Dept · Python Programming · Attendance
 </header>
 
 <div class="container">
@@ -97,21 +97,17 @@ ISE Dept · Python Programming — 22IS444 · 2025-26
 <button class="green"
 style="font-size:20px;padding:18px 30px"
 onclick="showProfessor()">
-
 Open Professor Dashboard
-
 </button>
 
 </div>
 
 <div class="card">
 
-<h4>Student</h4>
+<h3>Student</h3>
 
 <button class="blue" onclick="showStudent()">
-
 Mark Attendance
-
 </button>
 
 </div>
@@ -139,9 +135,7 @@ style="color:#00e5ff;margin-bottom:10px"></div>
 <button id="submitBtn"
 class="green"
 onclick="submitAttendance()">
-
 Submit
-
 </button>
 
 <div id="result"></div>
@@ -158,19 +152,11 @@ Submit
 
 <h3>Professor Dashboard</h3>
 
-Date
-<input type="date" id="date">
-
 Period
 <select id="period">
 <option>P1</option>
 <option>P2</option>
 </select>
-
-<br>
-
-Defaulter Threshold %
-<input id="threshold" value="75">
 
 <br>
 
@@ -180,8 +166,8 @@ Defaulter Threshold %
 <h3 id="status">Closed</h3>
 
 <div id="tokenDisplay"></div>
-
 <div id="timer"></div>
+<div id="count"></div>
 
 </div>
 
@@ -190,13 +176,11 @@ Defaulter Threshold %
 <h3>Live Attendance</h3>
 
 <table id="table">
-
 <tr>
 <th>USN</th>
 <th>Name</th>
 <th>Time</th>
 </tr>
-
 </table>
 
 </div>
@@ -223,8 +207,9 @@ const BASE="https://api.jsonbin.io/v3/b/"+BIN_ID;
 let timerInterval;
 let pollInterval;
 
-const STUDENTS = [
-  { id: "2GI23IS103", name: "Sridhar B Awajigol" },
+const STUDENTS=[
+
+ { id: "2GI23IS103", name: "Sridhar B Awajigol" },
   { id: "2GI23IS111", name: "Tanishq Mj" },
   { id: "2GI24IS002", name: "Aditya Malli" },
   { id: "2GI24IS003", name: "Aditya M Medar" },
@@ -298,10 +283,12 @@ const STUDENTS = [
   { id: "GIT25IS408", name: "Tejas Kulkarni" },
   { id: "GIT25IS421", name: "Anmol Murkute" },
   { id: "GIT25IS422", name: "Prajwal bill" }
+
+  
 ];
 
 function findStudent(usn){
-return STUDENTS.find(s=>s.usn===usn);
+return STUDENTS.find(s=>s.id===usn);
 }
 
 async function apiGet(){
@@ -371,10 +358,8 @@ let token=randomToken();
 let data=await apiGet();
 
 if(!data){
-data={sessions:[],threshold:75,activeSession:null};
+data={sessions:[],activeSession:null};
 }
-
-data.threshold=parseInt(document.getElementById("threshold").value);
 
 data.activeSession={
 token:token,
@@ -389,8 +374,6 @@ await apiPut(data);
 tokenDisplay.innerHTML="<h2>Token: "+token+"</h2>";
 
 status.innerText="OPEN";
-
-loadTable();
 
 startTimer();
 startPolling();
@@ -419,7 +402,7 @@ if(remaining<=0)closeSession();
 }
 
 function startPolling(){
-pollInterval=setInterval(loadTable,5000);
+pollInterval=setInterval(loadTable,3000);
 }
 
 async function closeSession(){
@@ -465,12 +448,13 @@ table.innerHTML+="<tr><td>"+u+"</td><td>"+name+"</td><td>"+time+"</td></tr>";
 
 }
 
+count.innerHTML="Present: "+data.activeSession.present.length+" / "+STUDENTS.length;
+
 }
 
 async function submitAttendance(){
 
 let usn=document.getElementById("usn").value.trim().toUpperCase();
-
 let token=document.getElementById("token").value;
 
 let data=await apiGet();
@@ -499,10 +483,9 @@ return;
 
 let now=new Date();
 
-let time=now.getHours()+":"+now.getMinutes();
+let time=now.getHours()+":"+String(now.getMinutes()).padStart(2,'0');
 
 data.activeSession.present.push(usn);
-
 data.activeSession.times[usn]=time;
 
 await apiPut(data);
@@ -519,26 +502,28 @@ apiGet().then(data=>{
 
 let sessions=data.sessions||[];
 
-let rows=[["Sl","USN","Name","Total","%"]];
-
-STUDENTS.forEach((s,i)=>{
-
-let present=0;
+let rows=[["USN","Name"]];
 
 sessions.forEach(sess=>{
-if(sess.present.includes(s.usn))present++;
+rows[0].push(sess.date+"-"+sess.period);
 });
 
-let percent=sessions.length?Math.round(present*100/sessions.length):0;
+STUDENTS.forEach(s=>{
 
-rows.push([i+1,s.usn,s.name,present,percent]);
+let row=[s.id,s.name];
+
+sessions.forEach(sess=>{
+row.push(sess.present.includes(s.id)?"P":"A");
+});
+
+rows.push(row);
 
 });
 
 let ws=XLSX.utils.aoa_to_sheet(rows);
 let wb=XLSX.utils.book_new();
 
-XLSX.utils.book_append_sheet(wb,ws,"Register");
+XLSX.utils.book_append_sheet(wb,ws,"Attendance");
 
 XLSX.writeFile(wb,"Attendance.xlsx");
 
