@@ -149,7 +149,9 @@ Resume
 <div class="card">
 
 <button onclick="exportExcel()">
+
 Export Excel
+
 </button>
 
 </div>
@@ -181,7 +183,6 @@ headers:{'X-Master-Key':API_KEY}
 });
 
 let j=await r.json();
-
 return j.record;
 
 }
@@ -234,7 +235,6 @@ function randomToken(){
 return Math.floor(1000+Math.random()*9000);
 }
 
-
 async function openSession(){
 
 let data=await apiGet();
@@ -271,7 +271,6 @@ startPolling();
 
 }
 
-
 function startTimer(){
 
 let remaining=300;
@@ -302,13 +301,14 @@ pollInterval=setInterval(loadTable,3000);
 function pauseSession(){
 paused=true;
 status.innerText="PAUSED";
+alert("Attendance Paused");
 }
 
 function resumeSession(){
 paused=false;
 status.innerText="OPEN";
+alert("Attendance Resumed");
 }
-
 
 async function closeSession(){
 
@@ -333,7 +333,6 @@ openBtn.disabled=false;
 
 }
 
-
 async function loadTable(){
 
 let data=await apiGet();
@@ -355,7 +354,6 @@ table.innerHTML+="<tr><td>"+u+"</td><td>"+name+"</td><td>"+time+"</td></tr>";
 count.innerHTML="Present: "+data.activeSession.present.length+" / "+STUDENTS.length;
 
 }
-
 
 async function submitAttendance(){
 
@@ -408,14 +406,12 @@ result.innerHTML="<div class='success'>Attendance Marked<br>"+stu.name+"<br><sma
 
 submitBtn.disabled=true;
 submitBtn.style.background="#777";
-submitBtn.style.cursor="not-allowed";
 
 document.getElementById("usn").value="";
 document.getElementById("token").value="";
 namePreview.innerText="";
 
 }
-
 
 function exportExcel(){
 
@@ -426,9 +422,9 @@ let sessions=data.sessions||[];
 let rows=[];
 
 rows.push(["KLS Gogte Institute of Technology"]);
-rows.push(["ISE Department"]);
-rows.push(["Python Programming Attendance"]);
-rows.push(["Generated: "+new Date().toLocaleString()]);
+rows.push(["Department of Information Science & Engineering"]);
+rows.push(["Python Programming Attendance Register"]);
+rows.push(["Generated on: "+new Date().toLocaleString()]);
 rows.push([]);
 
 let header=["Sl.No","USN","Name","Total","%"];
@@ -448,14 +444,12 @@ let presentTotal=0;
 let row=[i+1,s.id,s.name,0,0];
 
 sessions.forEach(sess=>{
-
 if(sess.present.includes(s.id)){
 row.push("P");
 presentTotal++;
 }else{
 row.push("A");
 }
-
 });
 
 row[3]=presentTotal;
@@ -487,7 +481,6 @@ XLSX.writeFile(wb,"Attendance.xlsx");
 });
 
 }
-
 
 document.addEventListener("DOMContentLoaded",()=>{
 
