@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 
@@ -36,7 +37,7 @@ margin-top:20px;
 border:1px solid #2a2a3d;
 }
 
-input,select{
+input{
 padding:10px;
 margin:10px;
 font-size:16px;
@@ -68,12 +69,13 @@ border:1px solid #333;
 padding:6px;
 }
 
-.success{color:#00ff9d;font-size:20px}
+.success{color:#00ff9d;font-size:18px}
 .error{color:#ff4466}
 
 .hidden{display:none}
 
 </style>
+
 </head>
 
 <body>
@@ -87,14 +89,18 @@ ISE Dept · Python Programming — 22IS444 · 2025-26
 
 <div id="login">
 
-<div class="card" id="profcard">
-<h2>Professor</h2>
-<button class="green" onclick="showProfessor()">Open Professor Dashboard</button>
+<div class="card">
+
+<h3>Professor</h3>
+<button class="green" onclick="showProfessor()">Open Dashboard</button>
+
 </div>
 
 <div class="card">
+
 <h4>Student</h4>
 <button class="blue" onclick="showStudent()">Mark Attendance</button>
+
 </div>
 
 </div>
@@ -105,15 +111,24 @@ ISE Dept · Python Programming — 22IS444 · 2025-26
 
 <h3>Student Attendance</h3>
 
-<input id="usn" placeholder="Enter USN" style="text-transform:uppercase" oninput="previewName()">
+<input id="usn"
+placeholder="Enter USN"
+style="text-transform:uppercase"
+oninput="previewName()">
 
-<div id="namePreview" style="color:#00e5ff;margin-bottom:10px"></div>
+<div id="namePreview" style="color:#00e5ff"></div>
 
-<input id="token" placeholder="4 digit token">
+<input id="token" placeholder="Token">
 
 <br>
 
-<button id="submitBtn" class="green" onclick="submitAttendance()">Submit</button>
+<button id="submitBtn"
+class="green"
+onclick="submitAttendance()">
+
+Submit
+
+</button>
 
 <div id="result"></div>
 
@@ -130,6 +145,7 @@ ISE Dept · Python Programming — 22IS444 · 2025-26
 <h3>Professor Dashboard</h3>
 
 <button class="green" onclick="openSession()">Open Attendance</button>
+
 <button class="red" onclick="closeSession()">Close Attendance</button>
 
 <h3 id="status">Closed</h3>
@@ -240,9 +256,29 @@ return STUDENTS.find(s=>s.usn===usn);
 }
 
 function previewName(){
+
 let usn=document.getElementById("usn").value.trim().toUpperCase();
+
 let stu=findStudent(usn);
+
 namePreview.innerText=stu?stu.name:"";
+
+}
+
+function showStudent(){
+login.style.display="none";
+student.style.display="block";
+}
+
+function showProfessor(){
+login.style.display="none";
+prof.style.display="block";
+}
+
+function goHome(){
+student.style.display="none";
+prof.style.display="none";
+login.style.display="block";
 }
 
 </script>
