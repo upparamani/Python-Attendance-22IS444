@@ -30,8 +30,7 @@ ISE Department · Python Programming · Attendance
 
 <h2>Professor</h2>
 
-<button class="green"
-style="font-size:20px;padding:18px 30px"
+<button class="green" style="font-size:20px;padding:18px 30px"
 onclick="showProfessor()">
 
 Open Professor Dashboard
@@ -53,6 +52,7 @@ Mark Attendance
 </div>
 
 </div>
+
 
 <div id="student" class="hidden">
 
@@ -89,6 +89,7 @@ Submit
 
 </div>
 
+
 <div id="prof" class="hidden">
 
 <div class="card">
@@ -104,18 +105,27 @@ Period
 
 <br>
 
-<button id="openBtn"
-class="green"
-onclick="openSession()">
+<button id="openBtn" class="green" onclick="openSession()">
 
 Open Attendance
 
 </button>
 
-<button class="red"
-onclick="closeSession()">
+<button class="red" onclick="closeSession()">
 
 Close Attendance
+
+</button>
+
+<button class="blue" onclick="pauseSession()">
+
+Pause
+
+</button>
+
+<button class="green" onclick="resumeSession()">
+
+Resume
 
 </button>
 
@@ -164,26 +174,21 @@ Export Excel
 <script>
 
 const BIN_ID="69b2559eb7ec241ddc605001";
-
 const API_KEY="$2a$10$rhR8M3EZH2BrZf4icYP8n./3XIT9lDt1Ba4fG8zYjyvZOEb8racrq";
-
 const BASE="https://api.jsonbin.io/v3/b/"+BIN_ID;
 
 let timerInterval;
 let pollInterval;
+let paused=false;
 
 function findStudent(usn){
-
 return STUDENTS.find(s=>s.id===usn);
-
 }
 
 async function apiGet(){
 
 let r=await fetch(BASE+"/latest",{
-
 headers:{'X-Master-Key':API_KEY}
-
 });
 
 let j=await r.json();
@@ -195,19 +200,12 @@ return j.record;
 async function apiPut(data){
 
 await fetch(BASE,{
-
 method:'PUT',
-
 headers:{
-
 'Content-Type':'application/json',
-
 'X-Master-Key':API_KEY
-
 },
-
 body:JSON.stringify(data)
-
 });
 
 }
@@ -221,24 +219,18 @@ prof.style.display="none";
 }
 
 function showStudent(){
-
 hideAll();
 student.style.display="block";
-
 }
 
 function showProfessor(){
-
 hideAll();
 prof.style.display="block";
-
 }
 
 function goHome(){
-
 hideAll();
 login.style.display="block";
-
 }
 
 function previewName(){
@@ -252,10 +244,9 @@ namePreview.innerText=stu?stu.name:"";
 }
 
 function randomToken(){
-
 return Math.floor(1000+Math.random()*9000);
-
 }
+
 
 async function openSession(){
 
@@ -272,21 +263,15 @@ return;
 let token=randomToken();
 
 if(!data){
-
 data={sessions:[],activeSession:null};
-
 }
 
 data.activeSession={
 
 token:token,
-
 date:new Date().toISOString().slice(0,10),
-
 period:period.value,
-
 present:[],
-
 times:{}
 
 };
@@ -300,10 +285,10 @@ status.innerText="OPEN";
 openBtn.disabled=true;
 
 startTimer();
-
 startPolling();
 
 }
+
 
 function startTimer(){
 
@@ -311,10 +296,11 @@ let remaining=300;
 
 timerInterval=setInterval(()=>{
 
+if(paused) return;
+
 remaining--;
 
 let m=Math.floor(remaining/60);
-
 let s=remaining%60;
 
 if(s<10)s="0"+s;
@@ -327,11 +313,31 @@ if(remaining<=0)closeSession();
 
 }
 
+
 function startPolling(){
 
 pollInterval=setInterval(loadTable,3000);
 
 }
+
+
+function pauseSession(){
+
+paused=true;
+
+status.innerText="PAUSED";
+
+}
+
+
+function resumeSession(){
+
+paused=false;
+
+status.innerText="OPEN";
+
+}
+
 
 async function closeSession(){
 
@@ -350,7 +356,6 @@ await apiPut(data);
 }
 
 clearInterval(timerInterval);
-
 clearInterval(pollInterval);
 
 status.innerText="Closed";
@@ -359,20 +364,19 @@ openBtn.disabled=false;
 
 }
 
+
 async function loadTable(){
 
 let data=await apiGet();
 
-if(!data.activeSession)return;
+if(!data.activeSession) return;
 
 table.innerHTML="<tr><th>USN</th><th>Name</th><th>Time</th></tr>";
 
 for(let u of data.activeSession.present){
 
 let stu=findStudent(u);
-
 let name=stu?stu.name:"";
-
 let time=data.activeSession.times[u];
 
 table.innerHTML+="<tr><td>"+u+"</td><td>"+name+"</td><td>"+time+"</td></tr>";
@@ -383,46 +387,34 @@ count.innerHTML="Present: "+data.activeSession.present.length+" / "+STUDENTS.len
 
 }
 
+
 async function submitAttendance(){
 
 let usn=document.getElementById("usn").value.trim().toUpperCase();
-
 let token=document.getElementById("token").value;
 
 let data=await apiGet();
 
 if(!data.activeSession){
-
 result.innerHTML="<div class='error'>Attendance Closed</div>";
-
 return;
-
 }
 
 if(token!=data.activeSession.token){
-
 result.innerHTML="<div class='error'>Incorrect Token</div>";
-
 return;
-
 }
 
 let stu=findStudent(usn);
 
 if(!stu){
-
 result.innerHTML="<div class='error'>USN Not Found</div>";
-
 return;
-
 }
 
 if(data.activeSession.present.includes(usn)){
-
 result.innerHTML="<div class='error'>Already Marked</div>";
-
 return;
-
 }
 
 let now=new Date();
@@ -430,16 +422,22 @@ let now=new Date();
 let time=now.getHours()+":"+String(now.getMinutes()).padStart(2,'0');
 
 data.activeSession.present.push(usn);
-
 data.activeSession.times[usn]=time;
 
 await apiPut(data);
 
-result.innerHTML="<div class='success'>Attendance Marked<br>"+stu.name+"</div>";
+result.innerHTML="<div class='success'>Attendance Marked<br>"+stu.name+"<br><small>You cannot submit again</small></div>";
 
 submitBtn.disabled=true;
+submitBtn.style.background="#777";
+submitBtn.style.cursor="not-allowed";
+
+document.getElementById("usn").value="";
+document.getElementById("token").value="";
+namePreview.innerText="";
 
 }
+
 
 function exportExcel(){
 
@@ -447,30 +445,52 @@ apiGet().then(data=>{
 
 let sessions=data.sessions||[];
 
-let rows=[["USN","Name"]];
+let header=["USN","Name","Total","%"];
+let countRow=["","","",""];
 
 sessions.forEach(sess=>{
-
-rows[0].push(sess.date+"-"+sess.period);
-
+header.push(sess.date+"-"+sess.period);
 });
+
+let rows=[header,countRow];
 
 STUDENTS.forEach(s=>{
 
-let row=[s.id,s.name];
+let presentTotal=0;
+
+let row=[s.id,s.name,0,0];
 
 sessions.forEach(sess=>{
 
-row.push(sess.present.includes(s.id)?"P":"A");
+if(sess.present.includes(s.id)){
+row.push("P");
+presentTotal++;
+}else{
+row.push("A");
+}
 
 });
+
+row[2]=presentTotal;
+row[3]=sessions.length?Math.round(presentTotal*100/sessions.length):0;
 
 rows.push(row);
 
 });
 
-let ws=XLSX.utils.aoa_to_sheet(rows);
+sessions.forEach((sess,i)=>{
 
+let presentCount=0;
+
+STUDENTS.forEach(s=>{
+if(sess.present.includes(s.id)) presentCount++;
+});
+
+countRow[i+4]=presentCount;
+
+});
+
+let ws=XLSX.utils.aoa_to_sheet(rows);
 let wb=XLSX.utils.book_new();
 
 XLSX.utils.book_append_sheet(wb,ws,"Attendance");
@@ -481,11 +501,13 @@ XLSX.writeFile(wb,"Attendance.xlsx");
 
 }
 
+
 document.addEventListener("DOMContentLoaded",()=>{
 
 let p=new URLSearchParams(location.search);
 
-if(p.get("prof")=="1")profcard.style.display="block";
+if(p.get("prof")=="1")
+profcard.style.display="block";
 
 });
 
