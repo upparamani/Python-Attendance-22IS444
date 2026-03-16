@@ -1,79 +1,51 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
 
-<title>22IS444 Attendance</title>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
 
 body{
 font-family:Arial;
-background:#0a0a0f;
-color:#e8e8f0;
-margin:0;
-text-align:center;
-}
-
-header{
-background:#12121a;
-padding:15px;
-border-bottom:1px solid #2a2a3d;
-}
-
-.container{
-max-width:900px;
-margin:auto;
-padding:20px;
+background:#eef2f7;
+display:flex;
+justify-content:center;
+align-items:center;
+height:100vh;
 }
 
 .card{
-background:#1a1a26;
-padding:20px;
-border-radius:10px;
-margin-top:20px;
-border:1px solid #2a2a3d;
+background:white;
+padding:30px;
+border-radius:12px;
+width:320px;
+text-align:center;
+box-shadow:0 5px 20px rgba(0,0,0,0.15);
 }
 
-input,select{
-padding:10px;
-margin:10px;
-font-size:16px;
-border-radius:6px;
-border:none;
+input{
+width:100%;
+padding:12px;
+margin-top:10px;
+border:1px solid #ccc;
+border-radius:8px;
+text-transform:uppercase;
 }
 
 button{
-padding:12px 18px;
-font-size:16px;
+width:100%;
+padding:12px;
+margin-top:12px;
+background:#2b6cb0;
+color:white;
 border:none;
-border-radius:6px;
-cursor:pointer;
-margin:10px;
+border-radius:8px;
 }
 
-.green{background:#00aa66;color:white}
-.red{background:#ff4466;color:white}
-.blue{background:#0099cc;color:white}
-
-table{
-width:100%;
-border-collapse:collapse;
+#msg{
 margin-top:15px;
 }
-
-th,td{
-border:1px solid #333;
-padding:6px;
-}
-
-.success{color:#00ff9d;font-size:20px}
-.error{color:#ff4466}
-
-.hidden{display:none}
 
 </style>
 
@@ -81,470 +53,46 @@ padding:6px;
 
 <body>
 
-<header>
-<h2>KLS Gogte Institute of Technology</h2>
-ISE Dept · Python Programming — 22IS444 · 2025-26
-</header>
-
-<div class="container">
-
-<div id="login">
-
-<div class="card hidden" id="profcard">
-
-<h2>Professor</h2>
-
-<button class="green"
-style="font-size:20px;padding:18px 30px"
-onclick="showProfessor()">
-
-Open Professor Dashboard
-
-</button>
-
-</div>
-
 <div class="card">
 
-<h4>Student</h4>
+<h3>22IS444 Python Programming</h3>
 
-<button class="blue" onclick="showStudent()">
+<? if(sessionOpen){ ?>
 
-Mark Attendance
+<input id="usn" placeholder="Enter USN">
 
-</button>
+<button onclick="submit()">Mark Attendance</button>
 
-</div>
-
-</div>
-
-<div id="student" class="hidden">
-
-<div class="card">
-
-<h3>Student Attendance</h3>
-
-<input id="usn"
-placeholder="Enter USN"
-style="text-transform:uppercase"
-oninput="previewName()">
-
-<div id="namePreview"
-style="color:#00e5ff;margin-bottom:10px"></div>
-
-<input id="token" placeholder="4 digit token">
-
-<br>
-
-<button id="submitBtn"
-class="green"
-onclick="submitAttendance()">
-
-Submit
-
-</button>
-
-<div id="result"></div>
-
-<button onclick="goHome()">Back</button>
-
-</div>
-
-</div>
-
-<div id="prof" class="hidden">
-
-<div class="card">
-
-<h3>Professor Dashboard</h3>
-
-Date
-<input type="date" id="date">
-
-Period
-<select id="period">
-<option>P1</option>
-<option>P2</option>
-</select>
-
-<br>
-
-Defaulter Threshold %
-<input id="threshold" value="75">
-
-<br>
-
-<button class="green" onclick="openSession()">Open Attendance</button>
-<button class="red" onclick="closeSession()">Close Attendance</button>
-
-<h3 id="status">Closed</h3>
-
-<div id="tokenDisplay"></div>
-
-<div id="timer"></div>
-
-</div>
-
-<div class="card">
-
-<h3>Live Attendance</h3>
-
-<table id="table">
-
-<tr>
-<th>USN</th>
-<th>Name</th>
-<th>Time</th>
-</tr>
-
-</table>
-
-</div>
-
-<div class="card">
-
-<button onclick="exportExcel()">Export Excel</button>
-
-</div>
-
-<button onclick="goHome()">Exit</button>
-
-</div>
-
-</div>
+<div id="msg"></div>
 
 <script>
 
-const BIN_ID="69b2559eb7ec241ddc605001";
-const API_KEY="$2a$10$rhR8M3EZH2BrZf4icYP8n./3XIT9lDt1Ba4fG8zYjyvZOEb8racrq";
+function submit(){
 
-const BASE="https://api.jsonbin.io/v3/b/"+BIN_ID;
+const usn=document.getElementById("usn").value;
 
-let timerInterval;
-let pollInterval;
+google.script.run
 
-const STUDENTS=[
+.withSuccessHandler(function(res){
 
-/* paste your full 74 student list here */
+document.getElementById("msg").innerText=res.message;
 
-{usn:'2GI23IS103',name:'Sridhar B Awajjigol'},
-{usn:'2GI23IS111',name:'Tanishq Mj'},
-{usn:'2GI24IS002',name:'Aditya Malli'},
-{usn:'2GI24IS003',name:'Aditya M Medar'},
-{usn:'2GI24IS004',name:'Aditya Morab'},
-{usn:'2GI24IS006',name:'Akul R Sanu'},
-{usn:'2GI24IS010',name:'Ankita Santosh Chinti'},
-{usn:'2GI24IS011',name:'Anshul'},
-{usn:'2GI24IS012',name:'Anuragh K Talawar'},
-{usn:'2GI24IS013',name:'Apeksha Padwalkar'},
-{usn:'2GI24IS015',name:'Atharv Kitwadkar'},
-{usn:'2GI24IS016',name:'Basavaraj Biradar'},
-{usn:'2GI24IS017',name:'Bhagya Patil'},
-{usn:'2GI24IS019',name:'Bhargav M Kulkarni'},
-{usn:'2GI24IS022',name:'Darshan M Tulajan'},
-{usn:'2GI24IS023',name:'Dhanush D Naik'},
-{usn:'2GI24IS025',name:'Gautami Manjunath Bhute'},
-{usn:'2GI24IS026',name:'Girish Hadimani'},
-{usn:'2GI24IS027',name:'Guru Hampannavar'},
-{usn:'2GI24IS028',name:'Khushi Ravindra Majagavi'},
-{usn:'2GI24IS029',name:'Kshiti R S'},
-{usn:'2GI24IS030',name:'Laxman Awate'},
-{usn:'2GI24IS035',name:'Manasvi Jadhav'},
-{usn:'2GI24IS036',name:'Manjunath Hanamant Sarur'},
-{usn:'2GI24IS039',name:'Namita Dhadi'},
-{usn:'2GI24IS040',name:'Naveen Kumar K'},
-{usn:'2GI24IS043',name:'Nisarga Bairawadagi'},
-{usn:'2GI24IS044',name:'Omkar Bhovi'},
-{usn:'2GI24IS047',name:'Prajwal H'},
-{usn:'2GI24IS048',name:'Prajwal Manoj'},
-{usn:'2GI24IS049',name:'Pranav Panale'},
-{usn:'2GI24IS055',name:'Purva Naik'},
-{usn:'2GI24IS056',name:'Pushpadant Mugganavar'},
-{usn:'2GI24IS058',name:'Rajeshwari Mallappa Ashi'},
-{usn:'2GI24IS060',name:'Ravi Soraganvi'},
-{usn:'2GI24IS061',name:'Ravinandan Shivapuer'},
-{usn:'2GI24IS062',name:'Ritvik Rajesh Bilgeekar'},
-{usn:'2GI24IS063',name:'Rohitkumar Siddu Kuri'},
-{usn:'2GI24IS068',name:'Samarth Patil'},
-{usn:'2GI24IS069',name:'Sammed Patil'},
-{usn:'2GI24IS071',name:'Sanjana M Badiger'},
-{usn:'2GI24IS073',name:'Sarthak Patil'},
-{usn:'2GI24IS076',name:'Shivangi Singh'},
-{usn:'2GI24IS082',name:'Shreya Nidavani'},
-{usn:'2GI24IS084',name:'Shrihari Chikkodikar'},
-{usn:'2GI24IS085',name:'Shrilakshmi U Gangadharmath'},
-{usn:'2GI24IS086',name:'Shriom Rai'},
-{usn:'2GI24IS088',name:'Siddharam Patted'},
-{usn:'2GI24IS090',name:'Sneha A Patil'},
-{usn:'2GI24IS097',name:'Subramanya S Kamble'},
-{usn:'2GI24IS098',name:'Suchitra Yallappa Busaraddi'},
-{usn:'2GI24IS099',name:'Sunakshi Thakur'},
-{usn:'2GI24IS102',name:'Swayam Vernekar'},
-{usn:'2GI24IS111',name:'Vedanidhi Namannavar'},
-{usn:'2GI24IS116',name:'Vikasgoud S Sangannavar'},
-{usn:'2GI24IS117',name:'Vinay Turaidar'},
-{usn:'2GI24IS119',name:'Vinod Kodolli'},
-{usn:'2GI24IS122',name:'Rahul R Deshpande'}
+})
 
-
-  
-];
-
-function findStudent(usn){
-return STUDENTS.find(s=>s.usn===usn);
-}
-
-async function apiGet(){
-
-let r=await fetch(BASE+"/latest",{
-headers:{'X-Master-Key':API_KEY}
-});
-
-let j=await r.json();
-
-return j.record;
+.markAttendance(usn);
 
 }
-
-async function apiPut(data){
-
-await fetch(BASE,{
-method:'PUT',
-headers:{
-'Content-Type':'application/json',
-'X-Master-Key':API_KEY
-},
-body:JSON.stringify(data)
-});
-
-}
-
-function hideAll(){
-login.style.display="none";
-student.style.display="none";
-prof.style.display="none";
-}
-
-function showStudent(){
-hideAll();
-student.style.display="block";
-}
-
-function showProfessor(){
-hideAll();
-prof.style.display="block";
-}
-
-function goHome(){
-hideAll();
-login.style.display="block";
-}
-
-function previewName(){
-
-let usn=document.getElementById("usn").value.trim().toUpperCase();
-
-let stu=findStudent(usn);
-
-namePreview.innerText=stu?stu.name:"";
-
-}
-
-function randomToken(){
-return Math.floor(1000+Math.random()*9000);
-}
-
-async function openSession(){
-
-let token=randomToken();
-
-let data=await apiGet();
-
-if(!data){
-data={sessions:[],threshold:75,activeSession:null};
-}
-
-data.threshold=parseInt(document.getElementById("threshold").value);
-
-data.activeSession={
-token:token,
-date:new Date().toISOString().slice(0,10),
-period:period.value,
-present:[],
-times:{}
-};
-
-await apiPut(data);
-
-tokenDisplay.innerHTML="<h2>Token: "+token+"</h2>";
-
-status.innerText="OPEN";
-
-loadTable();
-
-startTimer();
-startPolling();
-
-}
-
-function startTimer(){
-
-let remaining=300;
-
-timerInterval=setInterval(()=>{
-
-remaining--;
-
-let m=Math.floor(remaining/60);
-let s=remaining%60;
-
-if(s<10)s="0"+s;
-
-timer.innerText="Time Remaining "+m+":"+s;
-
-if(remaining<=0)closeSession();
-
-},1000);
-
-}
-
-function startPolling(){
-pollInterval=setInterval(loadTable,5000);
-}
-
-async function closeSession(){
-
-let data=await apiGet();
-
-if(data.activeSession){
-
-data.sessions=data.sessions||[];
-
-data.sessions.push(data.activeSession);
-
-data.activeSession=null;
-
-await apiPut(data);
-
-}
-
-clearInterval(timerInterval);
-clearInterval(pollInterval);
-
-status.innerText="Closed";
-
-}
-
-async function loadTable(){
-
-let data=await apiGet();
-
-if(!data.activeSession)return;
-
-table.innerHTML="<tr><th>USN</th><th>Name</th><th>Time</th></tr>";
-
-for(let u of data.activeSession.present){
-
-let stu=findStudent(u);
-
-let name=stu?stu.name:"";
-
-let time=data.activeSession.times[u];
-
-table.innerHTML+="<tr><td>"+u+"</td><td>"+name+"</td><td>"+time+"</td></tr>";
-
-}
-
-}
-
-async function submitAttendance(){
-
-let usn=document.getElementById("usn").value.trim().toUpperCase();
-
-let token=document.getElementById("token").value;
-
-let data=await apiGet();
-
-if(!data.activeSession){
-result.innerHTML="<div class='error'>Attendance Closed</div>";
-return;
-}
-
-if(token!=data.activeSession.token){
-result.innerHTML="<div class='error'>Incorrect Token</div>";
-return;
-}
-
-let stu=findStudent(usn);
-
-if(!stu){
-result.innerHTML="<div class='error'>USN Not Found</div>";
-return;
-}
-
-if(data.activeSession.present.includes(usn)){
-result.innerHTML="<div class='error'>Already Marked</div>";
-return;
-}
-
-let now=new Date();
-
-let time=now.getHours()+":"+now.getMinutes();
-
-data.activeSession.present.push(usn);
-
-data.activeSession.times[usn]=time;
-
-await apiPut(data);
-
-result.innerHTML="<div class='success'>Attendance Marked<br>"+stu.name+"</div>";
-
-submitBtn.disabled=true;
-
-}
-
-function exportExcel(){
-
-apiGet().then(data=>{
-
-let sessions=data.sessions||[];
-
-let rows=[["Sl","USN","Name","Total","%"]];
-
-STUDENTS.forEach((s,i)=>{
-
-let present=0;
-
-sessions.forEach(sess=>{
-if(sess.present.includes(s.usn))present++;
-});
-
-let percent=sessions.length?Math.round(present*100/sessions.length):0;
-
-rows.push([i+1,s.usn,s.name,present,percent]);
-
-});
-
-let ws=XLSX.utils.aoa_to_sheet(rows);
-let wb=XLSX.utils.book_new();
-
-XLSX.utils.book_append_sheet(wb,ws,"Register");
-
-XLSX.writeFile(wb,"Attendance.xlsx");
-
-});
-
-}
-
-document.addEventListener("DOMContentLoaded",()=>{
-
-let p=new URLSearchParams(location.search);
-
-if(p.get("prof")=="1")profcard.style.display="block";
-
-});
 
 </script>
 
+<? } else { ?>
+
+<p>Attendance not open</p>
+
+<? } ?>
+
+</div>
+
 </body>
+
 </html>
