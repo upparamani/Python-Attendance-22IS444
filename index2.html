@@ -11,7 +11,7 @@
 
 <script src="students.js"></script>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
 
 </head>
 
@@ -45,9 +45,7 @@ Open Professor Dashboard
 <h3>Student</h3>
 
 <button class="blue" onclick="showStudent()">
-
 Mark Attendance
-
 </button>
 
 </div>
@@ -104,21 +102,13 @@ Period
 
 <br>
 
-<button id="openBtn" class="green" onclick="openSession()">
-Open Attendance
-</button>
+<button id="openBtn" class="green" onclick="openSession()">Open Attendance</button>
 
-<button class="red" onclick="closeSession()">
-Close Attendance
-</button>
+<button class="red" onclick="closeSession()">Close Attendance</button>
 
-<button class="blue" onclick="pauseSession()">
-Pause
-</button>
+<button class="blue" onclick="pauseSession()">Pause</button>
 
-<button class="green" onclick="resumeSession()">
-Resume
-</button>
+<button class="green" onclick="resumeSession()">Resume</button>
 
 <h3 id="status">Closed</h3>
 
@@ -130,30 +120,38 @@ Resume
 
 </div>
 
+
 <div class="card">
 
 <h3>Live Attendance</h3>
 
 <table id="table">
-
 <tr>
 <th>USN</th>
 <th>Name</th>
 <th>Time</th>
 </tr>
-
 </table>
 
 </div>
 
+
 <div class="card">
 
-<button onclick="exportExcel()">
+<h3>Students Not Marked Yet</h3>
 
-Export Excel
+<table id="absentTable">
+<tr>
+<th>USN</th>
+<th>Name</th>
+</tr>
+</table>
 
-</button>
+</div>
 
+
+<div class="card">
+<button onclick="exportExcel()">Export Excel</button>
 </div>
 
 <button onclick="goHome()">Exit</button>
@@ -177,27 +175,17 @@ return STUDENTS.find(s=>s.id===usn);
 }
 
 async function apiGet(){
-
-let r=await fetch(BASE+"/latest",{
-headers:{'X-Master-Key':API_KEY}
-});
-
+let r=await fetch(BASE+"/latest",{headers:{'X-Master-Key':API_KEY}});
 let j=await r.json();
 return j.record;
-
 }
 
 async function apiPut(data){
-
 await fetch(BASE,{
 method:'PUT',
-headers:{
-'Content-Type':'application/json',
-'X-Master-Key':API_KEY
-},
+headers:{'Content-Type':'application/json','X-Master-Key':API_KEY},
 body:JSON.stringify(data)
 });
-
 }
 
 function hideAll(){
@@ -211,9 +199,16 @@ hideAll();
 student.style.display="block";
 }
 
-function showProfessor(){
+async function showProfessor(){
 hideAll();
 prof.style.display="block";
+
+let data=await apiGet();
+if(data && data.activeSession){
+status.innerText="OPEN";
+}else{
+status.innerText="Closed";
+}
 }
 
 function goHome(){
@@ -224,7 +219,6 @@ login.style.display="block";
 function previewName(){
 
 let usn=document.getElementById("usn").value.trim().toUpperCase();
-
 let stu=findStudent(usn);
 
 namePreview.innerText=stu?stu.name:"";
@@ -261,9 +255,7 @@ times:{}
 await apiPut(data);
 
 tokenDisplay.innerHTML=token;
-
 status.innerText="OPEN";
-
 openBtn.disabled=true;
 
 startTimer();
@@ -315,20 +307,16 @@ async function closeSession(){
 let data=await apiGet();
 
 if(data.activeSession){
-
 data.sessions=data.sessions||[];
 data.sessions.push(data.activeSession);
 data.activeSession=null;
-
 await apiPut(data);
-
 }
 
 clearInterval(timerInterval);
 clearInterval(pollInterval);
 
 status.innerText="Closed";
-
 openBtn.disabled=false;
 
 }
@@ -336,10 +324,10 @@ openBtn.disabled=false;
 async function loadTable(){
 
 let data=await apiGet();
-
 if(!data.activeSession) return;
 
 table.innerHTML="<tr><th>USN</th><th>Name</th><th>Time</th></tr>";
+absentTable.innerHTML="<tr><th>USN</th><th>Name</th></tr>";
 
 for(let u of data.activeSession.present){
 
@@ -350,6 +338,12 @@ let time=data.activeSession.times[u];
 table.innerHTML+="<tr><td>"+u+"</td><td>"+name+"</td><td>"+time+"</td></tr>";
 
 }
+
+STUDENTS.forEach(s=>{
+if(!data.activeSession.present.includes(s.id)){
+absentTable.innerHTML+="<tr><td>"+s.id+"</td><td>"+s.name+"</td></tr>";
+}
+});
 
 count.innerHTML="Present: "+data.activeSession.present.length+" / "+STUDENTS.length;
 
@@ -392,7 +386,6 @@ return;
 }
 
 let now=new Date();
-
 let time=now.getHours()+":"+String(now.getMinutes()).padStart(2,'0');
 
 data.activeSession.present.push(usn);
@@ -402,7 +395,7 @@ await apiPut(data);
 
 localStorage.setItem(sessionKey,"done");
 
-result.innerHTML="<div class='success'>Attendance Marked<br>"+stu.name+"<br><small>You cannot submit again</small></div>";
+result.innerHTML="<div class='success'>Attendance Marked<br>"+stu.name+"</div>";
 
 submitBtn.disabled=true;
 submitBtn.style.background="#777";
@@ -428,19 +421,16 @@ rows.push(["Generated on: "+new Date().toLocaleString()]);
 rows.push([]);
 
 let header=["Sl.No","USN","Name","Total","%"];
-let countRow=["","","","",""];
 
 sessions.forEach(sess=>{
 header.push(sess.date+"-"+sess.period);
 });
 
 rows.push(header);
-rows.push(countRow);
 
 STUDENTS.forEach((s,i)=>{
 
 let presentTotal=0;
-
 let row=[i+1,s.id,s.name,0,0];
 
 sessions.forEach(sess=>{
@@ -459,21 +449,9 @@ rows.push(row);
 
 });
 
-sessions.forEach((sess,i)=>{
-
-let presentCount=0;
-
-STUDENTS.forEach(s=>{
-if(sess.present.includes(s.id)) presentCount++;
-});
-
-countRow[i+5]=presentCount;
-
-});
-
 let ws=XLSX.utils.aoa_to_sheet(rows);
-let wb=XLSX.utils.book_new();
 
+let wb=XLSX.utils.book_new();
 XLSX.utils.book_append_sheet(wb,ws,"Attendance");
 
 XLSX.writeFile(wb,"Attendance.xlsx");
@@ -485,9 +463,7 @@ XLSX.writeFile(wb,"Attendance.xlsx");
 document.addEventListener("DOMContentLoaded",()=>{
 
 let p=new URLSearchParams(location.search);
-
-if(p.get("prof")=="1")
-profcard.style.display="block";
+if(p.get("prof")=="1")profcard.style.display="block";
 
 });
 
