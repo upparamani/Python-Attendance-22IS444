@@ -30,7 +30,8 @@ ISE Department · Python Programming · Attendance
 
 <h2>Professor</h2>
 
-<button class="green" style="font-size:20px;padding:18px 30px"
+<button class="green"
+style="font-size:20px;padding:18px 30px"
 onclick="showProfessor()">
 
 Open Professor Dashboard
@@ -83,8 +84,6 @@ Submit
 
 <div id="result"></div>
 
-<button onclick="goHome()">Back</button>
-
 </div>
 
 </div>
@@ -106,27 +105,19 @@ Period
 <br>
 
 <button id="openBtn" class="green" onclick="openSession()">
-
 Open Attendance
-
 </button>
 
 <button class="red" onclick="closeSession()">
-
 Close Attendance
-
 </button>
 
 <button class="blue" onclick="pauseSession()">
-
 Pause
-
 </button>
 
 <button class="green" onclick="resumeSession()">
-
 Resume
-
 </button>
 
 <h3 id="status">Closed</h3>
@@ -158,9 +149,7 @@ Resume
 <div class="card">
 
 <button onclick="exportExcel()">
-
 Export Excel
-
 </button>
 
 </div>
@@ -211,11 +200,9 @@ body:JSON.stringify(data)
 }
 
 function hideAll(){
-
 login.style.display="none";
 student.style.display="none";
 prof.style.display="none";
-
 }
 
 function showStudent(){
@@ -253,11 +240,8 @@ async function openSession(){
 let data=await apiGet();
 
 if(data && data.activeSession){
-
 alert("Attendance already open");
-
 return;
-
 }
 
 let token=randomToken();
@@ -267,13 +251,11 @@ data={sessions:[],activeSession:null};
 }
 
 data.activeSession={
-
 token:token,
 date:new Date().toISOString().slice(0,10),
 period:period.value,
 present:[],
 times:{}
-
 };
 
 await apiPut(data);
@@ -313,29 +295,18 @@ if(remaining<=0)closeSession();
 
 }
 
-
 function startPolling(){
-
 pollInterval=setInterval(loadTable,3000);
-
 }
-
 
 function pauseSession(){
-
 paused=true;
-
 status.innerText="PAUSED";
-
 }
 
-
 function resumeSession(){
-
 paused=false;
-
 status.innerText="OPEN";
-
 }
 
 
@@ -346,9 +317,7 @@ let data=await apiGet();
 if(data.activeSession){
 
 data.sessions=data.sessions||[];
-
 data.sessions.push(data.activeSession);
-
 data.activeSession=null;
 
 await apiPut(data);
@@ -393,6 +362,13 @@ async function submitAttendance(){
 let usn=document.getElementById("usn").value.trim().toUpperCase();
 let token=document.getElementById("token").value;
 
+let sessionKey="attendance_"+usn;
+
+if(localStorage.getItem(sessionKey)){
+result.innerHTML="<div class='error'>Attendance already submitted from this browser</div>";
+return;
+}
+
 let data=await apiGet();
 
 if(!data.activeSession){
@@ -426,6 +402,8 @@ data.activeSession.times[usn]=time;
 
 await apiPut(data);
 
+localStorage.setItem(sessionKey,"done");
+
 result.innerHTML="<div class='success'>Attendance Marked<br>"+stu.name+"<br><small>You cannot submit again</small></div>";
 
 submitBtn.disabled=true;
@@ -445,20 +423,29 @@ apiGet().then(data=>{
 
 let sessions=data.sessions||[];
 
-let header=["USN","Name","Total","%"];
-let countRow=["","","",""];
+let rows=[];
+
+rows.push(["KLS Gogte Institute of Technology"]);
+rows.push(["ISE Department"]);
+rows.push(["Python Programming Attendance"]);
+rows.push(["Generated: "+new Date().toLocaleString()]);
+rows.push([]);
+
+let header=["Sl.No","USN","Name","Total","%"];
+let countRow=["","","","",""];
 
 sessions.forEach(sess=>{
 header.push(sess.date+"-"+sess.period);
 });
 
-let rows=[header,countRow];
+rows.push(header);
+rows.push(countRow);
 
-STUDENTS.forEach(s=>{
+STUDENTS.forEach((s,i)=>{
 
 let presentTotal=0;
 
-let row=[s.id,s.name,0,0];
+let row=[i+1,s.id,s.name,0,0];
 
 sessions.forEach(sess=>{
 
@@ -471,8 +458,8 @@ row.push("A");
 
 });
 
-row[2]=presentTotal;
-row[3]=sessions.length?Math.round(presentTotal*100/sessions.length):0;
+row[3]=presentTotal;
+row[4]=sessions.length?Math.round(presentTotal*100/sessions.length):0;
 
 rows.push(row);
 
@@ -486,7 +473,7 @@ STUDENTS.forEach(s=>{
 if(sess.present.includes(s.id)) presentCount++;
 });
 
-countRow[i+4]=presentCount;
+countRow[i+5]=presentCount;
 
 });
 
