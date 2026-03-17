@@ -360,6 +360,19 @@ let time=now.getHours()+":"+String(now.getMinutes()).padStart(2,'0');
 data.activeSession.present.push(usnVal);
 data.activeSession.times[usnVal]=time;
 
+// ✅ FIX STATUS LIVE
+if(data.activeSession){
+if(data.activeSession.paused){
+status.innerText = "PAUSED";
+}else{
+status.innerText = "OPEN";
+}
+}else{
+status.innerText = "Closed";
+}
+
+
+  
 await apiPut(data);
 
   
