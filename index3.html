@@ -312,12 +312,7 @@ async function submitAttendance(){
 let usnVal=document.getElementById("usn").value.trim().toUpperCase();
 let tokenVal=document.getElementById("token").value;
 
-let key="attendance_"+usnVal;
 
-if(localStorage.getItem(key)){
-result.innerHTML="<div class='error'>Already submitted</div>";
-return;
-}
 
 let data=await apiGet();
 
