@@ -42,10 +42,10 @@ ISE Department · Attendance System
 
 <h3>Student Attendance</h3>
 
-<input id="usn" placeholder="Enter USN" style="text-transform:uppercase" oninput="previewName()">
+<input id="usnInput" placeholder="Enter USN" style="text-transform:uppercase" oninput="previewName()">
 <div id="namePreview" style="color:#00e5ff;margin-bottom:10px"></div>
 
-<input id="token" placeholder="4 digit token"><br>
+<input id="tokenInput" placeholder="4 digit token"><br>
 
 <button id="submitBtn" class="green" onclick="submitAttendance()">Submit</button>
 
@@ -74,7 +74,8 @@ Date:
 <button class="blue" onclick="pauseSession()">Pause</button>
 <button class="green" onclick="resumeSession()">Resume</button>
 
-<h2 id="status" style="padding:10px;border-radius:8px;display:inline-block;">CLOSED</h2>
+<!-- FIX 1: Renamed id="status" → id="statusDisplay" to avoid conflict with window.status -->
+<h2 id="statusDisplay" style="padding:10px;border-radius:8px;display:inline-block;">CLOSED</h2>
 <div class="token" id="tokenDisplay"></div>
 <div id="timer"></div>
 <div id="count"></div>
@@ -83,7 +84,7 @@ Date:
 
 <div class="card">
 <h3>Live Attendance</h3>
-<table id="table">
+<table id="attendTable">
 <tr><th>USN</th><th>Name</th><th>Time</th></tr>
 </table>
 </div>
@@ -115,311 +116,338 @@ let timerInterval;
 let pollInterval;
 let paused=false;
 
-function findStudent(usn){
-return STUDENTS.find(s=>s.id===usn);
+// FIX 2: Use explicit getElementById instead of relying on global ID shortcuts
+// to avoid any future naming conflicts
+const statusDisplay = document.getElementById ? null : null; // resolved after DOMContentLoaded
+
+function getEl(id){ return document.getElementById(id); }
+
+function findStudent(usnVal){
+  return STUDENTS.find(s=>s.id===usnVal);
 }
 
 async function apiGet(){
-let r=await fetch(BASE+"/latest",{headers:{'X-Master-Key':API_KEY}});
-let j=await r.json();
-return j.record;
+  let r=await fetch(BASE+"/latest",{headers:{'X-Master-Key':API_KEY}});
+  let j=await r.json();
+  return j.record;
 }
 
 async function apiPut(data){
-await fetch(BASE,{
-method:'PUT',
-headers:{'Content-Type':'application/json','X-Master-Key':API_KEY},
-body:JSON.stringify(data)
-});
+  await fetch(BASE,{
+    method:'PUT',
+    headers:{'Content-Type':'application/json','X-Master-Key':API_KEY},
+    body:JSON.stringify(data)
+  });
 }
 
+// FIX 1: statusDisplay instead of status (window.status conflict fixed)
 function updateStatusUI(state){
-if(state==="OPEN"){
-status.innerText="OPEN"; status.style.background="#00aa66";
-}else if(state==="PAUSED"){
-status.innerText="PAUSED"; status.style.background="#ffaa00";
-}else{
-status.innerText="CLOSED"; status.style.background="#ff4466";
-}
+  let el=getEl("statusDisplay");
+  if(state==="OPEN"){
+    el.innerText="OPEN"; el.style.background="#00aa66";
+  }else if(state==="PAUSED"){
+    el.innerText="PAUSED"; el.style.background="#ffaa00";
+  }else{
+    el.innerText="CLOSED"; el.style.background="#ff4466";
+  }
 }
 
 function hideAll(){
-login.style.display="none";
-student.style.display="none";
-prof.style.display="none";
+  getEl("login").style.display="none";
+  getEl("student").style.display="none";
+  getEl("prof").style.display="none";
 }
 
 function showStudent(){
-hideAll();
-student.style.display="block";
+  hideAll();
+  getEl("student").style.display="block";
 }
 
 async function showProfessor(){
-hideAll();
-prof.style.display="block";
+  hideAll();
+  getEl("prof").style.display="block";
 
-datePicker.value=new Date().toISOString().slice(0,10);
+  getEl("datePicker").value=new Date().toISOString().slice(0,10);
 
-let data=await apiGet();
+  let data=await apiGet();
 
-if(data && data.activeSession){
-paused=data.activeSession.paused||false;
-updateStatusUI(paused?"PAUSED":"OPEN");
-tokenDisplay.innerText=data.activeSession.token;
-startPolling();
-}else{
-updateStatusUI("CLOSED");
+  // FIX 3: Clear any stale intervals before starting new ones
+  clearInterval(timerInterval);
+  clearInterval(pollInterval);
+
+  if(data && data.activeSession){
+    paused=data.activeSession.paused||false;
+    updateStatusUI(paused?"PAUSED":"OPEN");
+    getEl("tokenDisplay").innerText=data.activeSession.token;
+    getEl("openBtn").disabled=true;
+    // FIX 4: Restart timer when professor re-opens dashboard mid-session
+    startTimer();
+    startPolling();
+  }else{
+    updateStatusUI("CLOSED");
+  }
 }
-}
 
+// FIX 5: goHome() now clears intervals to stop background activity
 function goHome(){
-hideAll();
-login.style.display="block";
+  clearInterval(timerInterval);
+  clearInterval(pollInterval);
+  hideAll();
+  getEl("login").style.display="block";
 }
 
 function previewName(){
-let val=usn.value.trim().toUpperCase();
-let stu=findStudent(val);
-namePreview.innerText=stu?stu.name:"";
+  // FIX 2: Use usnInput id instead of usn (avoids any variable shadowing)
+  let val=getEl("usnInput").value.trim().toUpperCase();
+  let stu=findStudent(val);
+  getEl("namePreview").innerText=stu?stu.name:"";
 }
 
 function randomToken(){
-return Math.floor(1000+Math.random()*9000);
+  return Math.floor(1000+Math.random()*9000);
 }
 
 async function openSession(){
 
-let data=await apiGet();
+  let data=await apiGet();
 
-if(data && data.activeSession){
-alert("Already Open"); return;
-}
+  if(data && data.activeSession){
+    alert("Already Open"); return;
+  }
 
-let token=randomToken();
+  // FIX 2: Use activeToken variable — avoids conflict with id="tokenInput"
+  let activeToken=randomToken();
 
-if(!data) data={sessions:[],activeSession:null};
+  if(!data) data={sessions:[],activeSession:null};
 
-data.activeSession={
-token:token,
-date:datePicker.value||new Date().toISOString().slice(0,10),
-period:period.value,
-present:[],
-times:{},
-paused:false
-};
+  data.activeSession={
+    token:activeToken,
+    date:getEl("datePicker").value||new Date().toISOString().slice(0,10),
+    period:getEl("period").value,
+    present:[],
+    times:{},
+    paused:false
+  };
 
-await apiPut(data);
+  await apiPut(data);
 
-paused=false;
-tokenDisplay.innerText=token;
-updateStatusUI("OPEN");
-openBtn.disabled=true;
+  paused=false;
+  getEl("tokenDisplay").innerText=activeToken;
+  updateStatusUI("OPEN");
+  getEl("openBtn").disabled=true;
 
-startTimer();
-timer.innerText = "Time Remaining 5:00";
-startPolling();
+  // FIX 3: Clear any existing intervals before starting fresh ones
+  clearInterval(timerInterval);
+  clearInterval(pollInterval);
+
+  startTimer();
+  startPolling();
 }
 
 function startTimer(){
 
-let remaining = 300;
+  let remaining = 300;
 
-// show immediately
-updateTimerDisplay(remaining);
+  updateTimerDisplay(remaining);
 
-timerInterval = setInterval(()=>{
+  timerInterval = setInterval(()=>{
 
-if(paused) return;
+    if(paused) return;
 
-remaining--;
+    remaining--;
 
-updateTimerDisplay(remaining);
+    updateTimerDisplay(remaining);
 
-if(remaining <= 0) closeSession();
+    if(remaining <= 0) closeSession();
 
-},1000);
+  },1000);
 }
 
 function updateTimerDisplay(remaining){
-let m = Math.floor(remaining/60);
-let s = remaining % 60;
-if(s < 10) s = "0" + s;
-
-timer.innerText = "Time Remaining " + m + ":" + s;
+  let m = Math.floor(remaining/60);
+  let s = remaining % 60;
+  if(s < 10) s = "0" + s;
+  getEl("timer").innerText = "Time Remaining " + m + ":" + s;
 }
+
 function startPolling(){
-pollInterval=setInterval(loadTable,2000);
+  pollInterval=setInterval(loadTable,2000);
 }
 
 async function pauseSession(){
-paused=true;
-let data=await apiGet();
-data.activeSession.paused=true;
-await apiPut(data);
-updateStatusUI("PAUSED");
+  paused=true;
+  let data=await apiGet();
+  if(!data.activeSession) return;
+  data.activeSession.paused=true;
+  await apiPut(data);
+  updateStatusUI("PAUSED");
 }
 
 async function resumeSession(){
-paused=false;
-let data=await apiGet();
-data.activeSession.paused=false;
-await apiPut(data);
-updateStatusUI("OPEN");
+  paused=false;
+  let data=await apiGet();
+  if(!data.activeSession) return;
+  data.activeSession.paused=false;
+  await apiPut(data);
+  updateStatusUI("OPEN");
 }
 
 async function closeSession(){
 
-let data=await apiGet();
+  let data=await apiGet();
 
-if(data.activeSession){
-data.sessions=data.sessions||[];
-data.sessions.push(data.activeSession);
-data.activeSession=null;
-await apiPut(data);
-}
+  if(data && data.activeSession){
+    data.sessions=data.sessions||[];
+    data.sessions.push(data.activeSession);
+    data.activeSession=null;
+    await apiPut(data);
+  }
 
-clearInterval(timerInterval);
-clearInterval(pollInterval);
+  clearInterval(timerInterval);
+  clearInterval(pollInterval);
 
-updateStatusUI("CLOSED");
-openBtn.disabled=false;
-tokenDisplay.innerText="";
-timer.innerText="";
-count.innerText="";
+  updateStatusUI("CLOSED");
+  getEl("openBtn").disabled=false;
+  getEl("tokenDisplay").innerText="";
+  getEl("timer").innerText="";
+  getEl("count").innerText="";
 }
 
 async function loadTable(){
 
-let data=await apiGet();
-if(!data) return;
+  let data=await apiGet();
+  if(!data) return;
 
-if(data.activeSession){
-updateStatusUI(data.activeSession.paused?"PAUSED":"OPEN");
-}else{
-updateStatusUI("CLOSED");
-}
+  if(data.activeSession){
+    updateStatusUI(data.activeSession.paused?"PAUSED":"OPEN");
+  }else{
+    updateStatusUI("CLOSED");
+  }
 
-if(!data.activeSession) return;
+  if(!data.activeSession) return;
 
-let sess=data.activeSession;
+  let sess=data.activeSession;
 
-table.innerHTML="<tr><th>USN</th><th>Name</th><th>Time</th></tr>";
-absentTable.innerHTML="<tr><th>USN</th><th>Name</th></tr>";
+  // FIX 1: Use attendTable instead of table (avoids any conflict with HTML table element)
+  getEl("attendTable").innerHTML="<tr><th>USN</th><th>Name</th><th>Time</th></tr>";
+  getEl("absentTable").innerHTML="<tr><th>USN</th><th>Name</th></tr>";
 
-for(let u of sess.present){
-let stu=findStudent(u);
-table.innerHTML+=`<tr><td>${u}</td><td>${stu?stu.name:""}</td><td>${sess.times[u]}</td></tr>`;
-}
+  for(let u of sess.present){
+    let stu=findStudent(u);
+    getEl("attendTable").innerHTML+=`<tr><td>${u}</td><td>${stu?stu.name:""}</td><td>${sess.times[u]}</td></tr>`;
+  }
 
-STUDENTS.forEach(s=>{
-if(!sess.present.includes(s.id)){
-absentTable.innerHTML+=`<tr><td>${s.id}</td><td>${s.name}</td></tr>`;
-}
-});
+  STUDENTS.forEach(s=>{
+    if(!sess.present.includes(s.id)){
+      getEl("absentTable").innerHTML+=`<tr><td>${s.id}</td><td>${s.name}</td></tr>`;
+    }
+  });
 
-count.innerHTML="Present: "+sess.present.length+" / "+STUDENTS.length;
+  getEl("count").innerHTML="Present: "+sess.present.length+" / "+STUDENTS.length;
 }
 
 async function submitAttendance(){
 
-let usnVal=usn.value.trim().toUpperCase();
-let tokenVal=token.value;
+  // FIX 2: Use usnInput / tokenInput ids — no conflict with variable names
+  let usnVal=getEl("usnInput").value.trim().toUpperCase();
+  let tokenVal=getEl("tokenInput").value.trim();
 
-let data=await apiGet();
+  let data=await apiGet();
 
-if(!data.activeSession){
-result.innerHTML="<div class='error'>Closed</div>"; return;
-}
+  if(!data || !data.activeSession){
+    getEl("result").innerHTML="<div class='error'>Closed</div>"; return;
+  }
 
-if(data.activeSession.paused){
-result.innerHTML="<div class='error'>Paused</div>"; return;
-}
+  if(data.activeSession.paused){
+    getEl("result").innerHTML="<div class='error'>Paused</div>"; return;
+  }
 
-if(tokenVal!=data.activeSession.token){
-result.innerHTML="<div class='error'>Wrong Token</div>"; return;
-}
+  // FIX 6: Compare as strings to avoid number/string type mismatch
+  if(tokenVal !== String(data.activeSession.token)){
+    getEl("result").innerHTML="<div class='error'>Wrong Token</div>"; return;
+  }
 
-let stu=findStudent(usnVal);
+  let stu=findStudent(usnVal);
 
-if(!stu){
-result.innerHTML="<div class='error'>Invalid USN</div>"; return;
-}
+  if(!stu){
+    getEl("result").innerHTML="<div class='error'>Invalid USN</div>"; return;
+  }
 
-if(data.activeSession.present.includes(usnVal)){
-result.innerHTML="<div class='error'>Already Marked</div>"; return;
-}
+  if(data.activeSession.present.includes(usnVal)){
+    getEl("result").innerHTML="<div class='error'>Already Marked</div>"; return;
+  }
 
-let now=new Date();
-let time=now.getHours()+":"+String(now.getMinutes()).padStart(2,'0');
+  let now=new Date();
+  let time=now.getHours()+":"+String(now.getMinutes()).padStart(2,'0');
 
-data.activeSession.present.push(usnVal);
-data.activeSession.times[usnVal]=time;
+  data.activeSession.present.push(usnVal);
+  data.activeSession.times[usnVal]=time;
 
-await apiPut(data);
+  await apiPut(data);
 
-result.innerHTML="<div class='success'>Marked<br>"+stu.name+"</div>";
+  getEl("result").innerHTML="<div class='success'>Marked<br>"+stu.name+"</div>";
 
-submitBtn.disabled=true;
-submitBtn.style.background="#777";
-submitBtn.innerText="Submitted";
+  let submitBtn=getEl("submitBtn");
+  submitBtn.disabled=true;
+  submitBtn.style.background="#777";
+  submitBtn.innerText="Submitted";
 
-usn.style.display="none";
-token.style.display="none";
-namePreview.innerText="";
+  getEl("usnInput").style.display="none";
+  getEl("tokenInput").style.display="none";
+  getEl("namePreview").innerText="";
 }
 
 function exportExcel(){
 
-apiGet().then(data=>{
+  apiGet().then(data=>{
 
-let sessions=data.sessions||[];
-let rows=[];
+    let sessions=data.sessions||[];
+    let rows=[];
 
-rows.push(["Attendance Register"]);
-rows.push(["Generated: "+new Date().toLocaleString()]);
-rows.push([]);
+    rows.push(["Attendance Register"]);
+    rows.push(["Generated: "+new Date().toLocaleString()]);
+    rows.push([]);
 
-let header=["Sl","USN","Name","Total","%"];
-sessions.forEach(s=>header.push(s.date+"-"+s.period));
-rows.push(header);
+    let header=["Sl","USN","Name","Total","%"];
+    sessions.forEach(s=>header.push(s.date+"-"+s.period));
+    rows.push(header);
 
-// DAY TOTAL ROW
-let dayTotals=["","","DAY TOTAL","",""];
-sessions.forEach(s=>dayTotals.push(s.present.length));
-rows.push(dayTotals);
+    let dayTotals=["","","DAY TOTAL","",""];
+    sessions.forEach(s=>dayTotals.push(s.present.length));
+    rows.push(dayTotals);
 
-STUDENTS.forEach((s,i)=>{
+    STUDENTS.forEach((s,i)=>{
 
-let total=0;
-let row=[i+1,s.id,s.name,0,0];
+      let total=0;
+      let row=[i+1,s.id,s.name,0,0];
 
-sessions.forEach(sess=>{
-if(sess.present.includes(s.id)){
-row.push("P"); total++;
-}else{
-row.push("A");
-}
-});
+      sessions.forEach(sess=>{
+        if(sess.present.includes(s.id)){
+          row.push("P"); total++;
+        }else{
+          row.push("A");
+        }
+      });
 
-row[3]=total;
-row[4]=sessions.length?Math.round(total*100/sessions.length):0;
+      row[3]=total;
+      row[4]=sessions.length?Math.round(total*100/sessions.length):0;
 
-rows.push(row);
+      rows.push(row);
 
-});
+    });
 
-let ws=XLSX.utils.aoa_to_sheet(rows);
-let wb=XLSX.utils.book_new();
-XLSX.utils.book_append_sheet(wb,ws,"Attendance");
+    let ws=XLSX.utils.aoa_to_sheet(rows);
+    let wb=XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb,ws,"Attendance");
 
-XLSX.writeFile(wb,"Attendance.xlsx");
+    XLSX.writeFile(wb,"Attendance.xlsx");
 
-});
+  });
 }
 
 document.addEventListener("DOMContentLoaded",()=>{
-let p=new URLSearchParams(location.search);
-if(p.get("prof")=="1")profcard.style.display="block";
+  let p=new URLSearchParams(location.search);
+  if(p.get("prof")=="1") getEl("profcard").style.display="block";
 });
 
 </script>
