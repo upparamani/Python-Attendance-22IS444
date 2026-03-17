@@ -308,11 +308,27 @@ count.innerText="";
 
 async function loadTable(){
 
-let data=await apiGet();
-if(!data || !data.activeSession) return;
+let data = await apiGet();
+if(!data) return;
 
-let sess=data.activeSession;
+// ✅ STATUS BLOCK (ALWAYS RUNS)
+if(data.activeSession){
+    if(data.activeSession.paused){
+        updateStatusUI("PAUSED");
+    }else{
+        updateStatusUI("OPEN");
+    }
+}else{
+    updateStatusUI("CLOSED");
+}
 
+// now safely continue
+if(!data.activeSession) return;
+
+let sess = data.activeSession;
+
+
+  
 table.innerHTML="<tr><th>USN</th><th>Name</th><th>Time</th></tr>";
 absentTable.innerHTML="<tr><th>USN</th><th>Name</th></tr>";
 
