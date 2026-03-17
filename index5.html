@@ -222,25 +222,31 @@ startPolling();
 
 function startTimer(){
 
-let remaining=300;
+let remaining = 300;
 
-timerInterval=setInterval(()=>{
+// show immediately
+updateTimerDisplay(remaining);
+
+timerInterval = setInterval(()=>{
 
 if(paused) return;
 
 remaining--;
 
-let m=Math.floor(remaining/60);
-let s=remaining%60;
-if(s<10)s="0"+s;
+updateTimerDisplay(remaining);
 
-timer.innerText="Time Remaining "+m+":"+s;
-
-if(remaining<=0)closeSession();
+if(remaining <= 0) closeSession();
 
 },1000);
 }
 
+function updateTimerDisplay(remaining){
+let m = Math.floor(remaining/60);
+let s = remaining % 60;
+if(s < 10) s = "0" + s;
+
+timer.innerText = "Time Remaining " + m + ":" + s;
+}
 function startPolling(){
 pollInterval=setInterval(loadTable,2000);
 }
