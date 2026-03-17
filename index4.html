@@ -237,7 +237,7 @@ await apiPut(data);
 
 paused=false;
 tokenDisplay.innerText=token;
-status.innerText="OPEN";
+updateStatusUI("OPEN");
 openBtn.disabled=true;
 
 startTimer();
@@ -282,7 +282,7 @@ paused=false;
 let data=await apiGet();
 data.activeSession.paused=false;
 await apiPut(data);
-status.innerText="OPEN";
+updateStatusUI("PAUSED");
 }
 
 async function closeSession(){
