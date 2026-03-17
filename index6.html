@@ -59,6 +59,7 @@ ISE Department · Attendance System
     <!-- FIX: id="tokenInput" avoids conflict with local variable 'token' in openSession() -->
     <input id="tokenInput" placeholder="4 digit token"><br>
     <button id="submitBtn" class="green" onclick="submitAttendance()">Submit</button>
+    <div id="result"></div>
   </div>
 </div>
 
@@ -247,7 +248,7 @@ async function openSession(){
 
   startTimer();
   startPolling();
-}
+  lastPresentCount=0;
 
 function startTimer(){
   let remaining=300;
@@ -309,6 +310,8 @@ async function closeSession(){
   getEl("count").innerText="";
 }
 
+let lastPresentCount=-1;
+
 async function loadTable(){
   let data=await apiGet();
   if(!data) return;
@@ -319,7 +322,7 @@ async function loadTable(){
     updateStatusUI("CLOSED");
   }
 
-  if(!data.activeSession) return;
+  if(!data.activeSession){ lastPresentCount=-1; return; }
 
   let sess=data.activeSession;
 
@@ -339,6 +342,14 @@ async function loadTable(){
   });
 
   getEl("count").innerHTML="Present: "+sess.present.length+" / "+STUDENTS.length;
+
+  // Toast on professor screen when a new student marks attendance
+  if(lastPresentCount>=0 && sess.present.length>lastPresentCount){
+    let newUSN=sess.present[sess.present.length-1];
+    let newStu=findStudent(newUSN);
+    showToast("✓ "+( newStu?newStu.name:newUSN),"t-success",2500);
+  }
+  lastPresentCount=sess.present.length;
 }
 
 async function submitAttendance(){
@@ -348,26 +359,26 @@ async function submitAttendance(){
   let data=await apiGet();
 
   if(!data||!data.activeSession){
-    showToast("Session Closed","t-error"); return;
+    getEl("result").innerText="Session Closed"; getEl("result").className="error"; return;
   }
 
   if(data.activeSession.paused){
-    showToast("Session Paused","t-error"); return;
+    getEl("result").innerText="Session Paused"; getEl("result").className="error"; return;
   }
 
   // FIX: strict string comparison — token stored as number, input is string
   if(tokenVal!==String(data.activeSession.token)){
-    showToast("Wrong Token ✗","t-error"); return;
+    getEl("result").innerText="Wrong Token ✗"; getEl("result").className="error"; return;
   }
 
   let stu=findStudent(usnVal);
 
   if(!stu){
-    showToast("Invalid USN ✗","t-error"); return;
+    getEl("result").innerText="Invalid USN ✗"; getEl("result").className="error"; return;
   }
 
   if(data.activeSession.present.includes(usnVal)){
-    showToast("Already Marked ✓","t-info"); return;
+    getEl("result").innerText="Already Marked"; getEl("result").className="error"; return;
   }
 
   let now=new Date();
@@ -378,7 +389,8 @@ async function submitAttendance(){
 
   await apiPut(data);
 
-  showToast("✓ Marked<br>"+stu.name,"t-success",3500);
+  getEl("result").innerHTML="✓ Marked<br>"+stu.name;
+  getEl("result").className="success";
 
   let sb=getEl("submitBtn");
   sb.disabled=true;
@@ -479,7 +491,7 @@ function exportExcel(){
 
     ws["!ref"]=XLSX.utils.encode_range({s:{r:0,c:0},e:{r:R-1,c:totalCols-1}});
     ws["!merges"]=merges;
-    ws["!rows"]=[{hpt:30},{hpt:22},{hpt:18},{hpt:18},{hpt:6},{hpt:14},{hpt:28},{hpt:18}];
+    ws["!rows"]=[{hpt:30},{hpt:22},{hpt:18},{hpt:18},{hpt:6},{hpt:14},{hpt:98},{hpt:18}]; // hpt:98 ≈ 130px for date header row
 
     let cols=[{wch:5},{wch:14},{wch:28},{wch:7},{wch:6}];
     sessions.forEach(()=>cols.push({wch:4}));  // ~30px for A/P columns
@@ -499,4 +511,3 @@ document.addEventListener("DOMContentLoaded",()=>{
 </script>
 </body>
 </html>
-
