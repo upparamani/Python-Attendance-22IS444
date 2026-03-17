@@ -362,8 +362,18 @@ data.activeSession.times[usnVal]=time;
 
 await apiPut(data);
 
+  
+submitBtn.disabled = true;
+submitBtn.style.background = "#777";
+submitBtn.innerText = "Submitted";
 
-result.innerHTML="<div class='success'>Marked<br>"+stu.name+"</div>";
+// hide inputs completely
+document.getElementById("usn").style.display = "none";
+document.getElementById("token").style.display = "none";
+namePreview.innerText = "";
+
+
+  
 
 namePreview.innerText="";
 }
