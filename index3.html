@@ -340,6 +340,17 @@ return;
 
 if(data.activeSession.present.includes(usnVal)){
 result.innerHTML="<div class='error'>Already Marked</div>";
+
+submitBtn.disabled = true;
+submitBtn.style.background = "#777";
+submitBtn.innerText = "Submitted";
+
+document.getElementById("usn").value = "";
+document.getElementById("token").value = "";
+
+document.getElementById("usn").disabled = true;
+document.getElementById("token").disabled = true;
+  
 return;
 }
 
