@@ -124,6 +124,25 @@ let timerInterval;
 let pollInterval;
 let paused=false;
 
+
+function updateStatusUI(state){
+
+    if(state === "OPEN"){
+        status.innerText = "OPEN";
+        status.style.background = "#00aa66";
+    }
+    else if(state === "PAUSED"){
+        status.innerText = "PAUSED";
+        status.style.background = "#ffaa00";
+    }
+    else{
+        status.innerText = "CLOSED";
+        status.style.background = "#ff4466";
+    }
+}
+
+  
+
 function findStudent(usn){
 return STUDENTS.find(s=>s.id===usn);
 }
