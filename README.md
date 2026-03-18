@@ -29,7 +29,7 @@
 |<img width="960" height="359" alt="image" src="https://github.com/user-attachments/assets/99ad749d-660b-4b7d-bee4-b7f00a92b0af" />
 |Professor Dashboard|
 |<img width="924" height="351" alt="image" src="https://github.com/user-attachments/assets/acbdb194-5750-4b6f-aa6a-151a35a4550c" />
-|
+
 
 |Live Attendance Table|
 |<img width="935" height="193" alt="image" src="https://github.com/user-attachments/assets/4101d8c4-c454-4ad9-9ea5-3cf5a1b89e7c" />
