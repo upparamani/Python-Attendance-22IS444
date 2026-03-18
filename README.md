@@ -24,11 +24,17 @@
 ## 🖼️ Screenshots
 
 |Login Screen|Student Screen|Professor Dashboard|
-|-|-|-|
+|<img width="908" height="468" alt="image" src="https://github.com/user-attachments/assets/006f8062-76c6-4ade-89e4-994dca3875df" />
+|<img width="960" height="359" alt="image" src="https://github.com/user-attachments/assets/99ad749d-660b-4b7d-bee4-b7f00a92b0af" />
+|<img width="924" height="351" alt="image" src="https://github.com/user-attachments/assets/acbdb194-5750-4b6f-aa6a-151a35a4550c" />
+
+|
 |*(screenshot)*|*(screenshot)*|*(screenshot)*|
 
 |Live Attendance Table|Exported Excel|
-|-|-|
+|<img width="935" height="193" alt="image" src="https://github.com/user-attachments/assets/4101d8c4-c454-4ad9-9ea5-3cf5a1b89e7c" />
+|<img width="1056" height="612" alt="image" src="https://github.com/user-attachments/assets/4ddb5319-ed93-4558-a2ee-baa31a36563e" />
+|
 |*(screenshot)*|*(screenshot)*|
 <img width="861" height="862" alt="image" src="https://github.com/user-attachments/assets/c0b25351-d2c2-47cd-b38f-fb8f261b4a20" />
 
