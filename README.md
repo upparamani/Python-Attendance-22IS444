@@ -3,7 +3,9 @@
 > Serverless, real-time student attendance system for the ISE Department  
 > Built for \*\*Python Programming (22IS444) · 2025–26\*\*
 
-🔗 **Live:** [upparamani.github.io/Attendance2/index6](https://upparamani.github.io/Attendance2/index6)
+🔗 **Live:** 
+Professor URL: https://upparamani.github.io/Python-Attendance-22IS444/index6.html?prof=1
+Student URL: https://upparamani.github.io/Python-Attendance-22IS444/index6.html
 
 \---
 
