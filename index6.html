@@ -189,7 +189,7 @@ async function showProfessor(){
     getEl("tokenDisplay").innerText=data.activeSession.token;
     getEl("openBtn").disabled=true;
     // FIX: restart timer when professor re-opens dashboard mid-session
-    startTimer();
+    startTimer(data.activeSession.startTime);
     startPolling();
   }else{
     updateStatusUI("CLOSED");
@@ -232,7 +232,8 @@ async function openSession(){
     period:getEl("period").value,
     present:[],
     times:{},
-    paused:false
+    paused:false,
+    startTime:Date.now()
   };
 
   await apiPut(data);
@@ -246,19 +247,19 @@ async function openSession(){
   clearInterval(timerInterval);
   clearInterval(pollInterval);
 
-  startTimer();
+  startTimer(data.activeSession.startTime);
   startPolling();
   lastPresentCount=0;
 }
 
-function startTimer(){
-  let remaining=300;
-  updateTimerDisplay(remaining);
+function startTimer(startTime){
   timerInterval=setInterval(()=>{
     if(paused) return;
-    remaining--;
+    let elapsed=Math.floor((Date.now()-(startTime||Date.now()))/1000);
+    let remaining=300-elapsed;
+    if(remaining<0) remaining=0;
     updateTimerDisplay(remaining);
-    if(remaining<=0) closeSession();
+    if(remaining<=0){ clearInterval(timerInterval); closeSession(); }
   },1000);
 }
 
